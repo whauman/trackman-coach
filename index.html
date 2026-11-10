@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1a1a19">
+<title>TrackMan coach</title>
+<style>
+:root{color-scheme:light dark;--bg:#f9f9f7;--card:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--line:#e1e0d9;--good:#006300;--bad:#d03b3b;--accent:#2a78d6}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--card:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#2c2c2a;--good:#0ca30c;--bad:#e66767;--accent:#3987e5}}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+h1{font-size:20px;margin:0 0 4px}.status{color:var(--ink2);font-size:13px;margin-bottom:12px;min-height:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+label{font-size:13px;color:var(--ink2);display:block;margin-bottom:4px}
+select,input,button{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%;box-sizing:border-box}
+button.primary{background:var(--accent);color:#fff;border:0;font-weight:600;margin-top:10px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.last{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}.cue{font-size:18px;margin-top:6px}
+.shot{border-top:1px solid var(--line);padding:8px 0;font-size:14px}.shot:first-child{border-top:0}
+.shot .n{color:var(--muted);font-variant-numeric:tabular-nums}.tag{font-size:12px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);margin-left:4px;color:var(--ink2)}
+.good::before{content:"✓ ";color:var(--good);font-weight:700}.flag::before{content:"● ";color:var(--bad)}
+.summary{font-size:14px;color:var(--ink2)}
+</style></head><body>
+<h1>TrackMan coach</h1><div class="status" id="status">Not started.</div>
+<div class="card" id="setup">
+  <div id="tokenRow"><label for="token">TrackMan token (from Claude's link — stays on this phone)</label><input id="token" autocomplete="off" placeholder="paste token"></div>
+  <div class="row" style="margin-top:10px">
+    <div><label for="focus">Advice focus</label><select id="focus"><option value="all">Everything</option><option value="face">Face control</option><option value="strike">Strike location</option><option value="path">Swing path</option></select></div>
+    <div><label for="speak">Speak</label><select id="speak"><option value="both">Result + advice</option><option value="cue">Advice only</option><option value="line">Result only</option><option value="off">Silent</option></select></div>
+  </div>
+  <button class="primary" id="start">Start session</button>
+</div>
+<div class="card"><div class="last" id="last">–</div><div class="cue" id="cue">Hit a shot once you've started.</div></div>
+<div class="card summary" id="summary" hidden></div>
+<div class="card" id="list"></div>
+<script type="module">
+import { fetchSessions, allStrokes, adviseShot, summarise } from './advice.mjs';
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.hash.slice(1));
+if (params.get('t')) { localStorage.setItem('tmToken', params.get('t')); history.replaceState(null, '', location.pathname + location.search); }
+const saved = localStorage.getItem('tmToken');
+if (saved) { $('token').value = saved; $('tokenRow').hidden = tokenDaysLeft(saved) < 0; }
+const replay = new URLSearchParams(location.search).get('replay');
+$('focus').value = localStorage.getItem('tmFocus') || 'all';
+$('speak').value = localStorage.getItem('tmSpeak') || 'both';
+function tokenDaysLeft(t) { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000 - Date.now()) / 864e5; } catch { return -1; } }
+function status(s) { $('status').textContent = s; }
+if (saved) { const d = tokenDaysLeft(saved); status(d < 0 ? 'Token expired — ask Claude for a new link.' : `Token valid for ${d.toFixed(1)} more days.`); }
+
+let voice;
+function pickVoice() { const v = speechSynthesis.getVoices(); voice = ['en-NZ', 'en-AU', 'en-GB', 'en-US'].map(l => v.find(x => x.lang === l)).find(Boolean) || v.find(x => x.lang?.startsWith('en')); }
+speechSynthesis.onvoiceschanged = pickVoice; pickVoice();
+function say(text) {
+  if (!text || $('speak').value === 'off') return;
+  const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = 1.05; speechSynthesis.speak(u);
+}
+
+const seen = new Set(), shots = [];
+let token, startedAt, first = true, timer, wake;
+async function keepAwake() { try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && timer) { keepAwake(); tick(); } });
+
+$('start').onclick = async () => {
+  token = $('token').value.trim(); localStorage.setItem('tmToken', token);
+  localStorage.setItem('tmFocus', $('focus').value); localStorage.setItem('tmSpeak', $('speak').value);
+  if (tokenDaysLeft(token) < 0) return status('Token missing or expired — ask Claude for a new link.');
+  say('Coach ready.'); // unlocks speech on iOS (needs a tap)
+  keepAwake(); startedAt = new Date(); $('setup').hidden = true;
+  await tick(); timer = setInterval(tick, 5000);
+};
+
+async function tick() {
+  try {
+    const from = new Date(replay || startedAt.getTime() - 12 * 3600e3).toISOString();
+    const fresh = [];
+    for (const s of allStrokes(await fetchSessions(token, from))) {
+      if (seen.has(s.key)) continue; seen.add(s.key);
+      if (first && !replay && new Date(s.time) < startedAt) continue;
+      fresh.push(s);
+    }
+    first = false;
+    status(`Watching · ${shots.length + fresh.length} shots · checked ${new Date().toLocaleTimeString()}`);
+    if (!fresh.length) return;
+    fresh.forEach(s => { shots.push(s); render(s, shots.length); });
+    const last = fresh[fresh.length - 1], a = adviseShot(last, $('focus').value);
+    $('last').textContent = a.line; $('cue').textContent = a.cue || '';
+    const mode = $('speak').value;
+    const lead = fresh.length > 1 ? `${fresh.length} new shots. Latest: ` : '';
+    say(lead + (mode === 'cue' ? a.cue : mode === 'line' ? a.line : `${a.line} ${a.cue}`));
+    if (shots.length % 5 === 0 || (fresh.length > 1 && Math.floor(shots.length / 5) > Math.floor((shots.length - fresh.length) / 5))) {
+      const s = summarise(shots.slice(-5)); $('summary').hidden = false; $('summary').textContent = s; say(s);
+    }
+  } catch (e) {
+    if (e.message === 'TOKEN_EXPIRED') { clearInterval(timer); status('Token expired — ask Claude for a new link.'); say('Token expired.'); }
+    else status(`Connection problem, retrying… (${e.message.slice(0, 60)})`);
+  }
+}
+function render(s, n) {
+  const a = adviseShot(s, $('focus').value), d = document.createElement('div');
+  d.className = 'shot ' + (a.good ? 'good' : a.tags.length ? 'flag' : '');
+  d.innerHTML = `<span class="n">#${n}</span> ${a.line} ${a.tags.map(t => `<span class="tag">${t}</span>`).join('')}<br><span class="summary">${a.cue || ''}</span>`;
+  $('list').prepend(d);
+}
+</script></body></html>
