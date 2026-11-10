@@ -2,6 +2,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-title" content="Coach">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="apple-touch-icon.png">
 <title>TrackMan Coach</title>
 <style>
 :root{color-scheme:dark;--bg:#0d0d0d;--card:#1a1a19;--card2:#232322;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--line:#2c2c2a;--axis:#383835;
@@ -107,7 +109,7 @@ svg text{font-size:10px;fill:var(--muted)}
   <div class="card" id="tokenCard">
     <p class="label">TrackMan sign-in</p>
     <div class="meta" id="tokenStatus"></div>
-    <div id="tokenRow" style="margin-top:8px"><input type="text" id="token" autocomplete="off" placeholder="Paste token, or open Claude's link"></div>
+    <div id="tokenRow" style="margin-top:8px"><input type="text" id="token" autocomplete="off" placeholder="Paste the link Claude sent you"></div>
   </div>
   <button class="big-btn" id="start">Start session</button>
   <div class="card" id="historyCard" style="margin-top:12px" hidden><p class="label">Recent sessions</p><div id="history"></div></div>
@@ -217,8 +219,14 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function setPill(state, text) { $('pill').className = 'pill ' + state; $('pillText').textContent = text; }
 const show = id => ['setup', 'live', 'summary'].forEach(s => $(s).hidden = s !== id);
 
+// Accept a bare token or the whole link (…#t=<token>) pasted into the box.
+const parseToken = v => (v.match(/#t=([\w.-]+)/) || [])[1] || v.trim();
+$('token').addEventListener('input', e => {
+  const t = parseToken(e.target.value);
+  if (daysLeft(t) > 0) { store.set('tmToken', t); showToken(); toast('Signed in'); }
+});
 $('start').onclick = async () => {
-  token = $('token').value.trim() || store.get('tmToken', ''); store.set('tmToken', token);
+  token = parseToken($('token').value) || store.get('tmToken', ''); store.set('tmToken', token);
   if (daysLeft(token) <= 0) { showToken(); return toast('Sign-in needed'); }
   say('Coach ready. Focus: ' + { face: 'face control', strike: 'strike location', path: 'swing path', all: 'everything' }[prefs.focus] + '.', { remember: false });
   keepAwake(); startedAt = new Date(); shots = []; seen.clear(); first = true; paused = false;
