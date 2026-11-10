@@ -45,7 +45,7 @@ button:active{opacity:.55}
 .cell{display:flex;align-items:center;gap:12px;min-height:44px;padding:11px 16px;position:relative}
 .cell+.cell::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
 .cell .grow{flex:1}.cell .val{color:var(--label2)}
-.cell input[type=text]{flex:1;font:inherit;border:0;background:none;color:var(--label);outline:none;min-width:0}
+.cell input[type=text],.cell input[type=password]{flex:1;font:inherit;border:0;background:none;color:var(--label);outline:none;min-width:0}
 .cell input[type=range]{flex:1;accent-color:var(--blue)}
 .cell.action{color:var(--blue);justify-content:center}
 .cell select{flex:1;min-width:0;font:inherit;font-size:17px;color:var(--label2);background:none;border:0;text-align:right;text-align-last:right;-webkit-appearance:none;appearance:none;outline:none}
@@ -97,7 +97,7 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
 .empty{padding:14px 16px;color:var(--label2);font-size:15px}
 /* toolbar */
 .dock{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bar);
-  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr)}
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);display:grid;grid-auto-flow:column;grid-auto-columns:1fr}
 .dock button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;font-size:10px;font-weight:500;letter-spacing:.12px;color:var(--blue)}
 .dock button svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .dock button.end{color:var(--red)}
@@ -110,6 +110,11 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
 .ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ch b{font-weight:600}.ch span{color:var(--label2);font-size:15px}
 .cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cg .k{font-size:12px;color:var(--label2)}
 .cg .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}.cg .d{font-size:12px;color:var(--label2)}
+.aibody{padding:14px 16px 4px;font-size:17px;line-height:1.4;white-space:pre-wrap}
+.aibody.thinking{color:var(--label2)}.aibody.thinking::after{content:"…";animation:pulse 1.2s infinite}
+.aibody.review{font-size:16px}
+.aimeta{padding:2px 16px 12px;font-size:12px;color:var(--label2)}
+.dock button[disabled]{opacity:.4}
 .tourhero{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 16px 10px}
 .tourhero .k{font-size:12px;color:var(--label2)}.tourhero .v{font-size:24px;font-weight:700;margin-top:2px}
 .tourhero > div:nth-child(2) .v{color:var(--blue)}
@@ -149,6 +154,13 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
         <button class="chip" data-v="5">5 shots</button><button class="chip" data-v="10">10</button><button class="chip" data-v="0">Off</button></div></div>
     </div>
     <div class="footer" id="voiceHint">For a much more natural voice, download one on your iPhone: Settings → Accessibility → Spoken Content → Voices → English, then pick one marked <b>Enhanced</b> or <b>Premium</b>. Reopen Coach and choose it here.</div></div>
+  <div class="section"><div class="header">AI coach</div>
+    <div class="group">
+      <div class="cell"><span>API key</span><input type="password" id="aiKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…" style="text-align:right"><button id="aiTest" class="link">Test</button></div>
+      <div class="cell"><span class="grow">Check-in</span><div class="seg" data-group="aiEvery" style="width:62%">
+        <button class="chip" data-v="5">5 shots</button><button class="chip" data-v="10">10</button><button class="chip" data-v="0">Off</button></div></div>
+    </div>
+    <div class="footer" id="aiStatus">Optional. With your own Anthropic API key, Claude reads the whole session and talks you through patterns every few shots, on demand with the Coach button, and in a written review at the end. The key stays on this phone and is sent only to Anthropic.</div></div>
   <div class="section" id="tokenCard"><div class="header">TrackMan</div>
     <div class="group">
       <div class="cell"><span class="grow" id="tokenStatus"></span></div>
@@ -172,6 +184,8 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
     </div>
     <div class="cue" id="cue">Advice appears here after each shot.</div>
   </div></div>
+  <div class="section" id="aiCard" hidden><div class="header">Coach</div><div class="group">
+    <div class="aibody" id="aiText"></div><div class="aimeta" id="aiMeta"></div></div></div>
   <div class="section"><div class="header">Goal</div><div class="group">
     <div class="goal">
       <div class="ring"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="36" fill="none" stroke="var(--fill)" stroke-width="10"/>
@@ -207,6 +221,8 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
     </div>
     <div class="cue" id="sTake"></div>
   </div></div>
+  <div class="section" id="reviewCard" hidden><div class="header">Coach's review</div><div class="group">
+    <div class="aibody review" id="reviewText"></div><div class="aimeta" id="reviewMeta"></div></div></div>
   <div class="section"><div class="header">By club</div><div class="group" id="sTable"></div></div>
   <button class="filled" id="copy">Copy Summary for Claude</button>
   <button class="tinted" id="again">New Session</button>
@@ -216,6 +232,7 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
   <button id="bPause" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg><span>Pause</span></button>
   <button id="bRepeat"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/></svg>Repeat</button>
   <button id="bMute" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6.5 9H4v6h2.5L11 19z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/></svg><span>Mute</span></button>
+  <button id="bCoach" hidden><svg viewBox="0 0 24 24"><path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z"/><path d="M18.5 15.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>Coach</button>
   <button id="bEnd" class="end"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/></svg>End</button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -226,13 +243,13 @@ const $ = id => document.getElementById(id);
 const store = { get: (k, d) => localStorage.getItem(k) ?? d, set: (k, v) => localStorage.setItem(k, v) };
 
 // ---------- settings ----------
-const prefs = { focus: store.get('tmFocus', 'face'), speak: store.get('tmSpeak', 'both'), every: store.get('tmEvery', '5'), rate: +store.get('tmRate', '1.0') };
+const prefs = { focus: store.get('tmFocus', 'face'), speak: store.get('tmSpeak', 'both'), every: store.get('tmEvery', '5'), aiEvery: store.get('tmAiEvery', '10'), rate: +store.get('tmRate', '1.0') };
 function syncChips() {
   document.querySelectorAll('[data-group]').forEach(g => g.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(prefs[g.dataset.group] === c.dataset.v))));
 }
 document.querySelectorAll('[data-group]').forEach(g => g.addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
-  prefs[g.dataset.group] = c.dataset.v; store.set({ focus: 'tmFocus', speak: 'tmSpeak', every: 'tmEvery' }[g.dataset.group], c.dataset.v);
+  prefs[g.dataset.group] = c.dataset.v; store.set({ focus: 'tmFocus', speak: 'tmSpeak', every: 'tmEvery', aiEvery: 'tmAiEvery' }[g.dataset.group], c.dataset.v);
   syncChips(); if (g.dataset.group === 'focus' && shots.length) { renderGoal(); renderHero(shots.at(-1)); }
 }));
 $('rate').value = prefs.rate; $('rate').oninput = e => { prefs.rate = +e.target.value; store.set('tmRate', e.target.value); };
@@ -271,13 +288,64 @@ speechSynthesis.onvoiceschanged = pickVoice; pickVoice(); setTimeout(pickVoice, 
 $('voice').onchange = e => { voice = speechSynthesis.getVoices().find(v => v.voiceURI === e.target.value); store.set('tmVoice', e.target.value); testVoice(); };
 const testVoice = () => say(`Seven iron. One thirty-seven, right on line. That's the one.`, { force: true, remember: false });
 $('testVoice').onclick = testVoice;
-function say(text, { force = false, remember = true } = {}) {
+function say(text, { force = false, remember = true, queue = false } = {}) {
   if (!text) return; if (remember) lastSpoken = text;
   if ((muted || prefs.speak === 'off') && !force) return;
-  speechSynthesis.cancel();
+  if (!queue) speechSynthesis.cancel(); // AI check-ins queue behind the shot tip instead of cutting it off
   const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = prefs.rate; speechSynthesis.speak(u);
 }
 const toast = t => { $('toast').textContent = t; $('toast').style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => $('toast').style.opacity = 0, 1600); };
+
+// ---------- AI coach ----------
+// ai.mjs pulls the Anthropic SDK from a CDN, so load it lazily: the app still works offline / without a key.
+let coach = null, aiBusy = false, aiTips = [];
+const aiKey = () => store.get('tmAiKey', '');
+const loadAi = () => import('./ai.mjs');
+async function getCoach() { if (!coach) { const { Coach } = await loadAi(); coach = new Coach(aiKey()); } return coach; }
+function showAiSettings() {
+  $('aiKey').value = aiKey(); $('bCoach').hidden = !aiKey();
+}
+$('aiKey').addEventListener('change', e => { store.set('tmAiKey', e.target.value.trim()); coach = null; showAiSettings(); });
+$('aiTest').onclick = async () => {
+  store.set('tmAiKey', $('aiKey').value.trim()); coach = null; showAiSettings();
+  if (!aiKey()) return toast('Paste an API key first');
+  $('aiStatus').textContent = 'Testing…';
+  try { const c = await getCoach(); const r = await c.test(); $('aiStatus').innerHTML = `<span class="ok">${r || 'Connected.'}</span>`; say(r || 'Coach is ready.', { force: true, remember: false }); }
+  catch (e) { const { explainError } = await loadAi(); $('aiStatus').innerHTML = `<span class="no">${explainError(e)}</span>`; }
+};
+showAiSettings();
+
+async function aiCheckin(trigger) {
+  if (!aiKey() || aiBusy || !shots.length) { if (trigger === 'button' && !shots.length) toast('Hit a few shots first'); return; }
+  aiBusy = true; $('bCoach').disabled = true;
+  $('aiCard').hidden = false; $('aiText').className = 'aibody thinking'; $('aiText').textContent = 'Looking at your session';
+  $('aiMeta').textContent = `After ${shots.length} shots`;
+  try {
+    const c = await getCoach(), text = await c.ask('checkpoint', shots, prefs.focus, aiTips.slice(-3));
+    aiTips.push(text);
+    $('aiText').className = 'aibody'; $('aiText').textContent = text;
+    $('aiMeta').textContent = `After ${shots.length} shots · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · session AI cost about US$${c.costUsd.toFixed(2)}`;
+    say(text, { queue: true });
+  } catch (e) {
+    const { explainError } = await loadAi().catch(() => ({ explainError: x => x.message }));
+    $('aiText').className = 'aibody'; $('aiText').textContent = explainError(e);
+  } finally { aiBusy = false; $('bCoach').disabled = false; }
+}
+$('bCoach').onclick = () => aiCheckin('button');
+
+async function aiReview() {
+  if (!aiKey() || !shots.length) { $('reviewCard').hidden = true; return; }
+  $('reviewCard').hidden = false; $('reviewText').className = 'aibody review thinking'; $('reviewText').textContent = 'Writing your review'; $('reviewMeta').textContent = '';
+  try {
+    const c = await getCoach(), text = await c.ask('review', shots, prefs.focus, aiTips.slice(-3));
+    $('reviewText').className = 'aibody review'; $('reviewText').textContent = text;
+    $('reviewMeta').textContent = `${c.usage.calls} AI call${c.usage.calls === 1 ? '' : 's'} this session · about US$${c.costUsd.toFixed(2)}`;
+    summaryText += `\n\nCoach's review:\n${text}`;
+  } catch (e) {
+    const { explainError } = await loadAi().catch(() => ({ explainError: x => x.message }));
+    $('reviewText').className = 'aibody review'; $('reviewText').textContent = explainError(e);
+  }
+}
 
 // ---------- session state ----------
 let token, startedAt, timer, clock, wake, paused = false, first = true;
@@ -298,6 +366,7 @@ $('start').onclick = async () => {
   if (daysLeft(token) <= 0) { showToken(); return toast('Sign-in needed'); }
   say('Coach ready. Focus: ' + { face: 'face control', strike: 'strike location', path: 'swing path', all: 'everything' }[prefs.focus] + '.', { remember: false });
   keepAwake(); startedAt = new Date(); shots = []; seen.clear(); first = true; paused = false;
+  coach = null; aiTips = []; $('aiCard').hidden = true; showAiSettings(); // fresh cost counter per session
   $('list').innerHTML = '<div class="empty">None yet.</div>'; renderGoal(); drawCharts(); $('tourCard').hidden = true;
   show('live'); $('dock').hidden = false; setPill('live', 'Live');
   await tick(); timer = setInterval(() => !paused && tick(), 5000);
@@ -346,8 +415,10 @@ async function tick() {
     const sp = speakShot(last, prefs.focus, fresh.length > 1 ? null : shots.at(-2)?.club);
     const lead = fresh.length > 1 ? `${fresh.length} new shots. Latest, ` : '';
     say(lead + (prefs.speak === 'cue' ? sp.cue : prefs.speak === 'line' ? sp.line : `${sp.line} ${sp.cue}`));
-    const every = +prefs.every;
-    if (every && Math.floor(shots.length / every) > Math.floor(before / every)) setTimeout(() => say(summarise(shots.slice(-every)), { remember: false }), 50);
+    const crossed = k => k && Math.floor(shots.length / k) > Math.floor(before / k);
+    // With AI check-ins on, Claude's check-in replaces the scripted summary so the two don't talk over each other.
+    if (aiKey() && crossed(+prefs.aiEvery)) aiCheckin('auto');
+    else if (crossed(+prefs.every)) setTimeout(() => say(summarise(shots.slice(-prefs.every)), { remember: false, queue: true }), 50);
   } catch (e) {
     tick.err = true;
     if (e.message === 'TOKEN_EXPIRED') { clearInterval(timer); setPill('paused', 'Signed out'); say('Sign-in expired. Ask Claude for a new link.', { force: true }); }
@@ -447,6 +518,7 @@ function drawCharts() {
 }
 
 // ---------- summary & history ----------
+let summaryText = '';
 function renderSummary() {
   show('summary');
   const stats = sessionStats(shots), adv = shots.map(s => adviseShot(s)), n = shots.length;
@@ -464,10 +536,11 @@ function renderSummary() {
     <div><div class="k">Face ≤2°</div><div class="v">${c.f2pGood}%</div></div>
     <div><div class="k">Centred</div><div class="v">${c.centred}%</div></div>
     <div><div class="k">Miss L / R</div><div class="v">${c.left}/${c.right}%</div></div></div>${tourLine(c.club)}</div>`).join('');
-  const text = [`TrackMan session ${startedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC, ${mins} min, ${n} shots, focus: ${prefs.focus}.`,
+  summaryText = [`TrackMan session ${startedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC, ${mins} min, ${n} shots, focus: ${prefs.focus}.`,
     `Face-to-path within 2°: ${$('sFace').textContent}. Centred strikes: ${$('sCentre').textContent}. ${$('sTake').textContent}`,
     ...stats.map(c => `${c.name}: ${c.n} shots, carry ${c.carry == null ? '–' : r0(c.carry)} m, face≤2° ${c.f2pGood}%, centred ${c.centred}%, >10m left ${c.left}% / right ${c.right}%` + (c.topIssue ? `, top issue ${TAG_LABEL[c.topIssue.tag]} ×${c.topIssue.n}` : '') + tourText(c.club))].join('\n');
-  $('copy').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied — paste it to Claude'); } catch { prompt('Copy this summary:', text); } };
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText(summaryText); toast('Copied — paste it to Claude'); } catch { prompt('Copy this summary:', summaryText); } };
+  aiReview();
   if (n) {
     const h = JSON.parse(store.get('tmHistory', '[]'));
     h.unshift({ at: startedAt.toISOString(), n, mins, focus: prefs.focus, face: $('sFace').textContent, centred: $('sCentre').textContent });
