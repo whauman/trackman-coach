@@ -1,70 +1,256 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#1a1a19">
-<title>TrackMan coach</title>
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d0d0d">
+<title>TrackMan Coach</title>
 <style>
-:root{color-scheme:light dark;--bg:#f9f9f7;--card:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--line:#e1e0d9;--good:#006300;--bad:#d03b3b;--accent:#2a78d6}
-@media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--card:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--line:#2c2c2a;--good:#0ca30c;--bad:#e66767;--accent:#3987e5}}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
-h1{font-size:20px;margin:0 0 4px}.status{color:var(--ink2);font-size:13px;margin-bottom:12px;min-height:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-label{font-size:13px;color:var(--ink2);display:block;margin-bottom:4px}
-select,input,button{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%;box-sizing:border-box}
-button.primary{background:var(--accent);color:#fff;border:0;font-weight:600;margin-top:10px}
-.row{display:flex;gap:10px}.row>*{flex:1}
-.last{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}.cue{font-size:18px;margin-top:6px}
-.shot{border-top:1px solid var(--line);padding:8px 0;font-size:14px}.shot:first-child{border-top:0}
-.shot .n{color:var(--muted);font-variant-numeric:tabular-nums}.tag{font-size:12px;padding:1px 6px;border-radius:6px;border:1px solid var(--line);margin-left:4px;color:var(--ink2)}
-.good::before{content:"✓ ";color:var(--good);font-weight:700}.flag::before{content:"● ";color:var(--bad)}
-.summary{font-size:14px;color:var(--ink2)}
+:root{color-scheme:dark;--bg:#0d0d0d;--card:#1a1a19;--card2:#232322;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--line:#2c2c2a;--axis:#383835;
+  --accent:#3987e5;--accent-ink:#fff;--good:#0ca30c;--warn:#fab219;--bad:#e66767;--radius:16px}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f9f9f7;--card:#fcfcfb;--card2:#f0efec;--ink:#0b0b0b;--ink2:#52514e;--line:#e1e0d9;--axis:#c3c2b7;
+  --accent:#2a78d6;--good:#006300;--warn:#a86b00;--bad:#d03b3b}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.top h1{font-size:20px;margin:0;flex:1;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--card2);color:var(--ink2)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.live .dot{background:var(--good);box-shadow:0 0 0 0 var(--good);animation:pulse 1.6s infinite}
+.pill.paused .dot{background:var(--warn)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 60%,transparent)}100%{box-shadow:0 0 0 8px transparent}}
+@media (prefers-reduced-motion:reduce){.pill.live .dot{animation:none}}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:9px 14px;border-radius:999px;background:var(--card2);color:var(--ink2);font-size:14px;font-weight:600;border:1px solid transparent}
+.chip[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--ink);border-color:var(--accent)}
+.big-btn{width:100%;padding:16px;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:17px;font-weight:700;margin-top:6px}
+input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.row{display:flex;gap:12px;align-items:center}
+/* hero */
+.hero .club{font-size:14px;font-weight:600;color:var(--ink2);display:flex;justify-content:space-between}
+.hero .carry{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.hero .carry small{font-size:22px;font-weight:600;color:var(--ink2);margin-left:4px}
+.hero .side{font-size:17px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.tile{background:var(--card2);border-radius:12px;padding:10px}
+.tile .k{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .s{font-size:12px;font-weight:600;margin-top:2px}
+.warn{color:var(--warn)}.warn::before{content:"~ "}.ok{color:var(--good)}.ok::before{content:"✓ "}.no{color:var(--bad)}.no::before{content:"! "}
+.cue{font-size:19px;line-height:1.35;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.cue.praise{color:var(--good)}
+/* goal */
+.goal .head{display:flex;justify-content:space-between;align-items:baseline}
+.goal .num{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+.bar{height:10px;border-radius:999px;background:var(--card2);overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
+.goal .sub{font-size:13px;color:var(--muted);margin-top:6px}
+/* charts */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.charts .card{margin:0;padding:12px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-size:10px;fill:var(--muted)}
+/* list */
+.shot{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.shot:first-of-type{border-top:0}
+.shot .n{color:var(--muted);width:28px;font-variant-numeric:tabular-nums}
+.shot .body{flex:1}.shot .t{font-weight:600}.shot .c{color:var(--ink2);font-size:13px;margin-top:2px}
+.tag{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--card2);color:var(--ink2);margin-left:4px;font-weight:600;white-space:nowrap}
+.mark{width:18px;font-weight:800}.mark.g{color:var(--good)}.mark.b{color:var(--bad)}
+/* dock */
+.dock{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dock button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:12px;background:var(--card2);font-size:12px;font-weight:600;color:var(--ink2)}
+.dock button svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dock button.end{background:color-mix(in srgb,var(--bad) 18%,var(--card2));color:var(--ink)}
+.dock button[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 22%,var(--card2));color:var(--ink)}
+/* summary */
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat3 .tile .v{font-size:26px}
+.crow{padding:12px 0;border-top:1px solid var(--line)}.crow:first-child{border-top:0;padding-top:0}
+.ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ch span{color:var(--muted);font-size:13px}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cg .k{font-size:11px;color:var(--muted);font-weight:600}
+.cg .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}.cg .d{font-size:11px;color:var(--ink2)}
+.ghost{width:100%;padding:14px;border-radius:14px;background:var(--card2);font-weight:700;margin-top:8px}
+.hist{font-size:14px;padding:10px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.hist:first-of-type{border-top:0}.hist span{color:var(--muted);font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+[hidden]{display:none!important}
 </style></head><body>
-<h1>TrackMan coach</h1><div class="status" id="status">Not started.</div>
-<div class="card" id="setup">
-  <div id="tokenRow"><label for="token">TrackMan token (from Claude's link — stays on this phone)</label><input id="token" autocomplete="off" placeholder="paste token"></div>
-  <div class="row" style="margin-top:10px">
-    <div><label for="focus">Advice focus</label><select id="focus"><option value="all">Everything</option><option value="face">Face control</option><option value="strike">Strike location</option><option value="path">Swing path</option></select></div>
-    <div><label for="speak">Speak</label><select id="speak"><option value="both">Result + advice</option><option value="cue">Advice only</option><option value="line">Result only</option><option value="off">Silent</option></select></div>
+
+<div class="top"><h1>TrackMan Coach</h1><span class="pill" id="pill"><span class="dot"></span><span id="pillText">Ready</span></span></div>
+
+<!-- SETUP -->
+<section id="setup">
+  <div class="card">
+    <p class="label">Today's focus</p>
+    <div class="chips" data-group="focus">
+      <button class="chip" data-v="face">Face control</button><button class="chip" data-v="strike">Strike</button>
+      <button class="chip" data-v="path">Path</button><button class="chip" data-v="all">Everything</button>
+    </div>
   </div>
-  <button class="primary" id="start">Start session</button>
-</div>
-<div class="card"><div class="last" id="last">–</div><div class="cue" id="cue">Hit a shot once you've started.</div></div>
-<div class="card summary" id="summary" hidden></div>
-<div class="card" id="list"></div>
+  <div class="card">
+    <p class="label">Voice</p>
+    <div class="chips" data-group="speak">
+      <button class="chip" data-v="both">Result + tip</button><button class="chip" data-v="cue">Tip only</button>
+      <button class="chip" data-v="line">Result only</button><button class="chip" data-v="off">Silent</button>
+    </div>
+    <div class="row" style="margin-top:14px"><span class="meta" style="width:70px">Speed</span><input type="range" id="rate" min="0.8" max="1.4" step="0.05"></div>
+    <p class="label" style="margin-top:16px">Spoken summary</p>
+    <div class="chips" data-group="every"><button class="chip" data-v="5">Every 5 shots</button><button class="chip" data-v="10">Every 10</button><button class="chip" data-v="0">Off</button></div>
+  </div>
+  <div class="card" id="tokenCard">
+    <p class="label">TrackMan sign-in</p>
+    <div class="meta" id="tokenStatus"></div>
+    <div id="tokenRow" style="margin-top:8px"><input type="text" id="token" autocomplete="off" placeholder="Paste token, or open Claude's link"></div>
+  </div>
+  <button class="big-btn" id="start">Start session</button>
+  <div class="card" id="historyCard" style="margin-top:12px" hidden><p class="label">Recent sessions</p><div id="history"></div></div>
+</section>
+
+<!-- LIVE -->
+<section id="live" hidden>
+  <div class="meta" id="liveMeta" style="margin:-4px 0 10px">Waiting for your first shot…</div>
+  <div class="card hero">
+    <div class="club"><span id="hClub">—</span><span id="hNum"></span></div>
+    <div class="carry" id="hCarry">—</div>
+    <div class="side" id="hSide">Hit a shot to begin</div>
+    <div class="tiles">
+      <div class="tile"><div class="k">Face / path</div><div class="v" id="tF2p">–</div><div class="s" id="sF2p"></div></div>
+      <div class="tile"><div class="k">Strike</div><div class="v" id="tStrike">–</div><div class="s" id="sStrike"></div></div>
+      <div class="tile"><div class="k">Start line</div><div class="v" id="tStart">–</div><div class="s" id="sStart"></div></div>
+    </div>
+    <div class="cue" id="cue">Advice appears here after each shot.</div>
+  </div>
+  <div class="card goal">
+    <div class="head"><span class="label" id="goalLabel" style="margin:0">Goal</span><span class="num" id="goalNum">–</span></div>
+    <div class="bar"><i id="goalBar" style="width:0"></i></div>
+    <div class="sub" id="goalSub"></div>
+    <div class="chips" data-group="focus" style="margin-top:12px">
+      <button class="chip" data-v="face">Face</button><button class="chip" data-v="strike">Strike</button>
+      <button class="chip" data-v="path">Path</button><button class="chip" data-v="all">All</button>
+    </div>
+  </div>
+  <div class="charts">
+    <div class="card"><p class="label">Strike map</p><svg id="faceMap" viewBox="0 0 160 112" role="img" aria-label="Impact locations on the clubface"></svg></div>
+    <div class="card"><p class="label">Dispersion</p><svg id="dispMap" viewBox="0 0 160 112" role="img" aria-label="Shot dispersion"></svg></div>
+  </div>
+  <div class="card" style="margin-top:12px"><p class="label">Shots</p><div id="list"><div class="meta">None yet.</div></div></div>
+</section>
+
+<!-- SUMMARY -->
+<section id="summary" hidden>
+  <div class="card"><p class="label" id="sumWhen"></p>
+    <div class="stat3">
+      <div class="tile"><div class="k">Shots</div><div class="v" id="sShots"></div></div>
+      <div class="tile"><div class="k">Face ≤2°</div><div class="v" id="sFace"></div></div>
+      <div class="tile"><div class="k">Centred</div><div class="v" id="sCentre"></div></div>
+    </div>
+    <div class="cue" id="sTake" style="font-size:16px"></div>
+  </div>
+  <div class="card"><p class="label">By club</p><div id="sTable"></div></div>
+  <button class="big-btn" id="copy">Copy summary for Claude</button>
+  <button class="ghost" id="again">New session</button>
+</section>
+
+<nav class="dock" id="dock" hidden>
+  <button id="bPause" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg><span>Pause</span></button>
+  <button id="bRepeat"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4"/></svg>Repeat</button>
+  <button id="bMute" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg><span>Mute</span></button>
+  <button id="bEnd" class="end"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>End</button>
+</nav>
+<div class="toast" id="toast"></div>
+
 <script type="module">
-import { fetchSessions, allStrokes, adviseShot, summarise } from './advice.mjs';
+import { fetchSessions, allStrokes, adviseShot, summarise, sessionStats, clubName, BASELINE, T, TAG_LABEL } from './advice.mjs';
 const $ = id => document.getElementById(id);
-const params = new URLSearchParams(location.hash.slice(1));
-if (params.get('t')) { localStorage.setItem('tmToken', params.get('t')); history.replaceState(null, '', location.pathname + location.search); }
-const saved = localStorage.getItem('tmToken');
-if (saved) { $('token').value = saved; $('tokenRow').hidden = tokenDaysLeft(saved) < 0; }
-const replay = new URLSearchParams(location.search).get('replay');
-$('focus').value = localStorage.getItem('tmFocus') || 'all';
-$('speak').value = localStorage.getItem('tmSpeak') || 'both';
-function tokenDaysLeft(t) { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000 - Date.now()) / 864e5; } catch { return -1; } }
-function status(s) { $('status').textContent = s; }
-if (saved) { const d = tokenDaysLeft(saved); status(d < 0 ? 'Token expired — ask Claude for a new link.' : `Token valid for ${d.toFixed(1)} more days.`); }
+const store = { get: (k, d) => localStorage.getItem(k) ?? d, set: (k, v) => localStorage.setItem(k, v) };
 
-let voice;
-function pickVoice() { const v = speechSynthesis.getVoices(); voice = ['en-NZ', 'en-AU', 'en-GB', 'en-US'].map(l => v.find(x => x.lang === l)).find(Boolean) || v.find(x => x.lang?.startsWith('en')); }
-speechSynthesis.onvoiceschanged = pickVoice; pickVoice();
-function say(text) {
-  if (!text || $('speak').value === 'off') return;
-  const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = 1.05; speechSynthesis.speak(u);
+// ---------- settings ----------
+const prefs = { focus: store.get('tmFocus', 'face'), speak: store.get('tmSpeak', 'both'), every: store.get('tmEvery', '5'), rate: +store.get('tmRate', '1.05') };
+function syncChips() {
+  document.querySelectorAll('[data-group]').forEach(g => g.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(prefs[g.dataset.group] === c.dataset.v))));
 }
+document.querySelectorAll('[data-group]').forEach(g => g.addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  prefs[g.dataset.group] = c.dataset.v; store.set({ focus: 'tmFocus', speak: 'tmSpeak', every: 'tmEvery' }[g.dataset.group], c.dataset.v);
+  syncChips(); if (g.dataset.group === 'focus' && shots.length) { renderGoal(); renderHero(shots.at(-1)); }
+}));
+$('rate').value = prefs.rate; $('rate').oninput = e => { prefs.rate = +e.target.value; store.set('tmRate', e.target.value); };
+syncChips();
 
-const seen = new Set(), shots = [];
-let token, startedAt, first = true, timer, wake;
-async function keepAwake() { try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && timer) { keepAwake(); tick(); } });
+// ---------- token ----------
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.get('t')) { store.set('tmToken', hash.get('t')); history.replaceState(null, '', location.pathname + location.search); }
+const daysLeft = t => { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).exp * 1000 - Date.now()) / 864e5; } catch { return -1; } };
+function showToken() {
+  const t = store.get('tmToken', ''), d = daysLeft(t);
+  $('token').value = t; $('tokenRow').hidden = d > 0;
+  $('tokenStatus').innerHTML = d > 0 ? `<span class="ok">Signed in · ${d < 1 ? Math.round(d * 24) + ' hours' : d.toFixed(1) + ' days'} left</span>`
+    : `<span class="no">${t ? 'Sign-in expired' : 'Not signed in'} — ask Claude for a new link</span>`;
+}
+showToken();
+const replay = new URLSearchParams(location.search).get('replay');
+
+// ---------- speech ----------
+let voice, muted = false, lastSpoken = '';
+const pickVoice = () => { const v = speechSynthesis.getVoices(); voice = ['en-NZ', 'en-AU', 'en-GB', 'en-US'].map(l => v.find(x => x.lang === l)).find(Boolean) || v.find(x => x.lang?.startsWith('en')); };
+speechSynthesis.onvoiceschanged = pickVoice; pickVoice();
+function say(text, { force = false, remember = true } = {}) {
+  if (!text) return; if (remember) lastSpoken = text;
+  if ((muted || prefs.speak === 'off') && !force) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); if (voice) u.voice = voice; u.rate = prefs.rate; speechSynthesis.speak(u);
+}
+const toast = t => { $('toast').textContent = t; $('toast').style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => $('toast').style.opacity = 0, 1600); };
+
+// ---------- session state ----------
+let token, startedAt, timer, clock, wake, paused = false, first = true;
+const seen = new Set(); let shots = [];
+const keepAwake = async () => { try { wake = await navigator.wakeLock?.request('screen'); } catch {} };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && timer && !paused) { keepAwake(); tick(); } });
+function setPill(state, text) { $('pill').className = 'pill ' + state; $('pillText').textContent = text; }
+const show = id => ['setup', 'live', 'summary'].forEach(s => $(s).hidden = s !== id);
 
 $('start').onclick = async () => {
-  token = $('token').value.trim(); localStorage.setItem('tmToken', token);
-  localStorage.setItem('tmFocus', $('focus').value); localStorage.setItem('tmSpeak', $('speak').value);
-  if (tokenDaysLeft(token) < 0) return status('Token missing or expired — ask Claude for a new link.');
-  say('Coach ready.'); // unlocks speech on iOS (needs a tap)
-  keepAwake(); startedAt = new Date(); $('setup').hidden = true;
-  await tick(); timer = setInterval(tick, 5000);
+  token = $('token').value.trim() || store.get('tmToken', ''); store.set('tmToken', token);
+  if (daysLeft(token) <= 0) { showToken(); return toast('Sign-in needed'); }
+  say('Coach ready. Focus: ' + { face: 'face control', strike: 'strike location', path: 'swing path', all: 'everything' }[prefs.focus] + '.', { remember: false });
+  keepAwake(); startedAt = new Date(); shots = []; seen.clear(); first = true; paused = false;
+  $('list').innerHTML = '<div class="meta">None yet.</div>'; renderGoal(); drawCharts();
+  show('live'); $('dock').hidden = false; setPill('live', 'Live');
+  await tick(); timer = setInterval(() => !paused && tick(), 5000);
+  clock = setInterval(updateMeta, 1000);
 };
+
+$('bPause').onclick = () => {
+  paused = !paused; $('bPause').setAttribute('aria-pressed', String(paused));
+  $('bPause').querySelector('span').textContent = paused ? 'Resume' : 'Pause';
+  setPill(paused ? 'paused' : 'live', paused ? 'Paused' : 'Live'); say(paused ? 'Paused.' : 'Resumed.', { remember: false, force: true });
+  if (!paused) tick();
+};
+$('bRepeat').onclick = () => lastSpoken ? say(lastSpoken, { force: true }) : toast('Nothing to repeat yet');
+$('bMute').onclick = () => {
+  muted = !muted; $('bMute').setAttribute('aria-pressed', String(muted)); $('bMute').querySelector('span').textContent = muted ? 'Unmute' : 'Mute';
+  if (muted) speechSynthesis.cancel(); toast(muted ? 'Voice off' : 'Voice on');
+};
+$('bEnd').onclick = async () => {
+  if (shots.length && !confirm('End this session?')) return;
+  if (!paused) await tick();
+  clearInterval(timer); clearInterval(clock); timer = null; wake?.release?.(); $('dock').hidden = true; setPill('', 'Ended');
+  renderSummary();
+};
+$('again').onclick = () => { show('setup'); setPill('', 'Ready'); showToken(); renderHistory(); };
+
+function updateMeta() {
+  const m = Math.floor((Date.now() - startedAt) / 60000), s = Math.floor((Date.now() - startedAt) / 1000) % 60;
+  $('liveMeta').textContent = `${m}:${String(s).padStart(2, '0')} · ${shots.length} shot${shots.length === 1 ? '' : 's'}` + (tick.at ? ` · checked ${Math.round((Date.now() - tick.at) / 1000)}s ago` : '') + (tick.err ? ' · reconnecting…' : '');
+}
 
 async function tick() {
   try {
@@ -75,27 +261,124 @@ async function tick() {
       if (first && !replay && new Date(s.time) < startedAt) continue;
       fresh.push(s);
     }
-    first = false;
-    status(`Watching · ${shots.length + fresh.length} shots · checked ${new Date().toLocaleTimeString()}`);
+    first = false; tick.at = Date.now(); tick.err = false;
     if (!fresh.length) return;
-    fresh.forEach(s => { shots.push(s); render(s, shots.length); });
-    const last = fresh[fresh.length - 1], a = adviseShot(last, $('focus').value);
-    $('last').textContent = a.line; $('cue').textContent = a.cue || '';
-    const mode = $('speak').value;
+    const before = shots.length; shots.push(...fresh);
+    fresh.forEach((s, i) => addRow(s, before + i + 1));
+    const last = fresh.at(-1), a = renderHero(last);
+    renderGoal(); drawCharts();
     const lead = fresh.length > 1 ? `${fresh.length} new shots. Latest: ` : '';
-    say(lead + (mode === 'cue' ? a.cue : mode === 'line' ? a.line : `${a.line} ${a.cue}`));
-    if (shots.length % 5 === 0 || (fresh.length > 1 && Math.floor(shots.length / 5) > Math.floor((shots.length - fresh.length) / 5))) {
-      const s = summarise(shots.slice(-5)); $('summary').hidden = false; $('summary').textContent = s; say(s);
-    }
+    say(lead + (prefs.speak === 'cue' ? a.cue : prefs.speak === 'line' ? a.line : `${a.line} ${a.cue}`));
+    const every = +prefs.every;
+    if (every && Math.floor(shots.length / every) > Math.floor(before / every)) setTimeout(() => say(summarise(shots.slice(-every)), { remember: false }), 50);
   } catch (e) {
-    if (e.message === 'TOKEN_EXPIRED') { clearInterval(timer); status('Token expired — ask Claude for a new link.'); say('Token expired.'); }
-    else status(`Connection problem, retrying… (${e.message.slice(0, 60)})`);
-  }
+    tick.err = true;
+    if (e.message === 'TOKEN_EXPIRED') { clearInterval(timer); setPill('paused', 'Signed out'); say('Sign-in expired. Ask Claude for a new link.', { force: true }); }
+  } finally { if (startedAt) updateMeta(); }
 }
-function render(s, n) {
-  const a = adviseShot(s, $('focus').value), d = document.createElement('div');
-  d.className = 'shot ' + (a.good ? 'good' : a.tags.length ? 'flag' : '');
-  d.innerHTML = `<span class="n">#${n}</span> ${a.line} ${a.tags.map(t => `<span class="tag">${t}</span>`).join('')}<br><span class="summary">${a.cue || ''}</span>`;
+
+// ---------- rendering ----------
+const r0 = v => Math.round(v), f1 = v => (v > 0 ? '+' : '') + v.toFixed(1), cap = t => t.replace(/^\w/, c => c.toUpperCase());
+function renderHero(s) {
+  const m = s.measurement, a = adviseShot(s, prefs.focus);
+  $('hClub').textContent = clubName(s.club).replace(/^\w/, c => c.toUpperCase());
+  $('hNum').textContent = '#' + shots.length;
+  $('hCarry').innerHTML = `${m.carry == null ? '—' : r0(m.carry)}<small>m</small>`;
+  const typ = BASELINE[s.club]?.typical, diff = typ && m.carry != null ? r0(m.carry - typ) : null;
+  $('hSide').textContent = [m.carrySide == null ? '' : Math.abs(m.carrySide) < 3 ? 'On line' : `${r0(Math.abs(m.carrySide))} m ${m.carrySide > 0 ? 'right' : 'left'}`,
+    diff == null ? '' : `${diff >= 0 ? '+' : ''}${diff} m vs your normal`].filter(Boolean).join(' · ');
+  const tile = (id, val, okay, okTxt, badTxt) => { $('t' + id).textContent = val; $('s' + id).className = 's ' + (okay == null ? '' : okay ? 'ok' : 'no'); $('s' + id).textContent = okay == null ? '' : okay ? okTxt : badTxt; };
+  const slight = a.f2p != null && Math.abs(a.f2p) >= T.f2pGood && Math.abs(a.f2p) < T.f2pBad;
+  tile('F2p', a.f2p == null ? '–' : f1(a.f2p) + '°', a.f2p == null ? null : Math.abs(a.f2p) < T.f2pGood, 'Square', (slight ? 'Slightly ' : '') + (a.f2p < 0 ? 'closed' : 'open'));
+  if (slight) $('sF2p').className = 's warn';
+  const strikeTxt = a.off == null ? '–' : a.centred ? 'Centre' : `${Math.abs(r0(a.off))}${a.off < 0 ? 'H' : 'T'} ${Math.abs(r0(a.ht))}${a.ht < 0 ? 'L' : 'H'}`;
+  tile('Strike', strikeTxt, a.off == null ? null : a.centred, 'Centred', a.tags.includes('heel') ? 'Heel' : a.tags.includes('toe') ? 'Toe' : a.tags.includes('low') ? 'Low' : 'Off-centre');
+  tile('Start', m.launchDirection == null ? '–' : f1(m.launchDirection) + '°', m.launchDirection == null ? null : Math.abs(m.launchDirection) < 3, 'On line', m.launchDirection > 0 ? 'Right' : 'Left');
+  $('cue').textContent = a.cue || 'Solid.'; $('cue').className = 'cue' + (a.good ? ' praise' : '');
+  return a;
+}
+const GOALS = {
+  face: { label: 'Face to path within 2°', test: a => a.f2p != null && Math.abs(a.f2p) < T.f2pGood, base: 39 },
+  strike: { label: 'Centred strikes', test: a => a.centred, base: 20 },
+  path: { label: 'Path between 0° and +5°', test: (a, s) => s.measurement.clubPath >= 0 && s.measurement.clubPath <= 5, base: null },
+  all: { label: 'Good shots (square, solid, on line)', test: a => a.good, base: null },
+};
+function renderGoal() {
+  const g = GOALS[prefs.focus], hits = shots.filter(s => g.test(adviseShot(s), s)).length, pct = shots.length ? Math.round(100 * hits / shots.length) : 0;
+  $('goalLabel').textContent = g.label; $('goalNum').textContent = shots.length ? pct + '%' : '–';
+  $('goalBar').style.width = pct + '%';
+  const last10 = shots.slice(-10), l10 = last10.filter(s => g.test(adviseShot(s), s)).length;
+  $('goalSub').textContent = shots.length ? `${hits} of ${shots.length} shots · last 10: ${l10}/${last10.length}` + (g.base ? ` · your baseline ${g.base}%` : '') : (g.base ? `Your baseline: ${g.base}%` : '');
+}
+function addRow(s, n) {
+  if (n === 1) $('list').innerHTML = '';
+  const a = adviseShot(s, prefs.focus), d = document.createElement('div'); d.className = 'shot';
+  d.innerHTML = `<span class="n">#${n}</span><span class="mark ${a.good ? 'g' : a.tags.length ? 'b' : ''}">${a.good ? '✓' : a.tags.length ? '!' : ''}</span>
+    <div class="body"><div class="t">${cap(a.line)}${a.tags.map(t => `<span class="tag">${TAG_LABEL[t] || t}</span>`).join('')}</div><div class="c">${a.cue || ''}</div></div>`;
   $('list').prepend(d);
 }
+const NS = 'http://www.w3.org/2000/svg';
+const el = (p, t, at, txt) => { const e = document.createElementNS(NS, t); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; p.appendChild(e); return e; };
+function drawCharts() {
+  // Strike map: face seen from behind the ball (right-hander): heel left, toe right. ±40 mm wide, ±25 mm tall.
+  const f = $('faceMap'); f.innerHTML = '';
+  const fx = mm => 80 + mm * 1.75, fy = mm => 54 - mm * 1.75;
+  el(f, 'path', { d: 'M14 30 Q14 16 30 14 L136 10 Q152 9 152 28 L150 84 Q149 98 134 98 L28 98 Q14 98 14 84 Z', fill: 'var(--card2)', stroke: 'var(--axis)', 'stroke-width': 1.5 });
+  el(f, 'line', { x1: 80, x2: 80, y1: 18, y2: 94, stroke: 'var(--axis)', 'stroke-dasharray': '2 3' });
+  el(f, 'line', { x1: 20, x2: 146, y1: 54, y2: 54, stroke: 'var(--axis)', 'stroke-dasharray': '2 3' });
+  el(f, 'circle', { cx: 80, cy: 54, r: 10.5, fill: 'none', stroke: 'var(--good)', 'stroke-width': 1, opacity: .7 });
+  el(f, 'text', { x: 18, y: 110 }, 'Heel'); el(f, 'text', { x: 150, y: 110, 'text-anchor': 'end' }, 'Toe');
+  const strikes = shots.map(s => s.measurement).filter(m => m.impactOffset != null && m.impactHeight != null);
+  strikes.forEach((m, i) => { const last = i === strikes.length - 1, x = Math.max(16, Math.min(150, fx(m.impactOffset * 1000))), y = Math.max(12, Math.min(96, fy(m.impactHeight * 1000)));
+    el(f, 'circle', { cx: x, cy: y, r: last ? 5 : 3.2, fill: last ? 'var(--accent)' : 'var(--muted)', opacity: last ? 1 : .55, stroke: last ? 'var(--card)' : 'none', 'stroke-width': 2 }); });
+  if (!strikes.length) el(f, 'text', { x: 80, y: 58, 'text-anchor': 'middle' }, 'No strike data yet');
+  // Dispersion: side (m) vs carry relative to that club's session median.
+  const d = $('dispMap'); d.innerHTML = '';
+  const med = {}; for (const s of shots) (med[s.club] ??= []).push(s.measurement.carry);
+  for (const k in med) { const a = med[k].filter(Number.isFinite).sort((x, y) => x - y); med[k] = a[a.length >> 1]; }
+  const dx = m => 80 + Math.max(-30, Math.min(30, m)) * 2.4, dy = m => 52 - Math.max(-25, Math.min(25, m)) * 1.7;
+  el(d, 'rect', { x: dx(-10), y: dy(10), width: dx(10) - dx(-10), height: dy(-10) - dy(10), rx: 6, fill: 'color-mix(in srgb,var(--good) 12%,transparent)' });
+  el(d, 'line', { x1: 80, x2: 80, y1: 6, y2: 98, stroke: 'var(--axis)' }); el(d, 'line', { x1: 8, x2: 152, y1: 52, y2: 52, stroke: 'var(--axis)', 'stroke-dasharray': '2 3' });
+  el(d, 'text', { x: 8, y: 110 }, 'Left'); el(d, 'text', { x: 152, y: 110, 'text-anchor': 'end' }, 'Right'); el(d, 'text', { x: 84, y: 12 }, 'Long'); el(d, 'text', { x: 84, y: 96 }, 'Short');
+  const pts = shots.filter(s => s.measurement.carrySide != null && s.measurement.carry != null);
+  pts.forEach((s, i) => { const last = i === pts.length - 1;
+    el(d, 'circle', { cx: dx(s.measurement.carrySide), cy: dy(s.measurement.carry - med[s.club]), r: last ? 5 : 3.2, fill: last ? 'var(--accent)' : 'var(--muted)', opacity: last ? 1 : .55, stroke: last ? 'var(--card)' : 'none', 'stroke-width': 2 }); });
+}
+
+// ---------- summary & history ----------
+function renderSummary() {
+  show('summary');
+  const stats = sessionStats(shots), adv = shots.map(s => adviseShot(s)), n = shots.length;
+  const pct = k => n ? Math.round(100 * k / n) + '%' : '–';
+  const mins = Math.round((Date.now() - startedAt) / 60000);
+  $('sumWhen').textContent = `${startedAt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} · ${mins} min`;
+  $('sShots').textContent = n; $('sFace').textContent = pct(adv.filter(a => a.f2p != null && Math.abs(a.f2p) < T.f2pGood).length);
+  $('sCentre').textContent = pct(adv.filter(a => a.centred).length);
+  const tags = {}; adv.forEach(a => a.tags.forEach(t => tags[t] = (tags[t] || 0) + 1));
+  const top = Object.entries(tags).sort((a, b) => b[1] - a[1]).slice(0, 2);
+  $('sTake').textContent = !n ? 'No shots recorded. If you were hitting, your simulator may only upload when its session ends — wait a minute and check the TrackMan app.'
+    : top.length ? `Most common issue: ${TAG_LABEL[top[0][0]].toLowerCase()} (${top[0][1]} of ${n})` + (top[1] ? `, then ${TAG_LABEL[top[1][0]].toLowerCase()} (${top[1][1]}).` : '.') : 'No recurring issues. Great session.';
+  $('sTable').innerHTML = stats.map(c => `<div class="crow"><div class="ch"><b>${cap(c.name)}</b><span>${c.n} shot${c.n === 1 ? '' : 's'}</span></div><div class="cg">
+    <div><div class="k">Carry</div><div class="v">${c.carry == null ? '–' : r0(c.carry) + ' m'}</div><div class="d">${c.carry != null && c.typical ? (c.carry - c.typical >= 0 ? '+' : '') + r0(c.carry - c.typical) + ' vs normal' : ''}</div></div>
+    <div><div class="k">Face ≤2°</div><div class="v">${c.f2pGood}%</div></div>
+    <div><div class="k">Centred</div><div class="v">${c.centred}%</div></div>
+    <div><div class="k">Miss L / R</div><div class="v">${c.left}/${c.right}%</div></div></div></div>`).join('');
+  const text = [`TrackMan session ${startedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC, ${mins} min, ${n} shots, focus: ${prefs.focus}.`,
+    `Face-to-path within 2°: ${$('sFace').textContent}. Centred strikes: ${$('sCentre').textContent}. ${$('sTake').textContent}`,
+    ...stats.map(c => `${c.name}: ${c.n} shots, carry ${c.carry == null ? '–' : r0(c.carry)} m, face≤2° ${c.f2pGood}%, centred ${c.centred}%, >10m left ${c.left}% / right ${c.right}%` + (c.topIssue ? `, top issue ${TAG_LABEL[c.topIssue.tag]} ×${c.topIssue.n}` : ''))].join('\n');
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied — paste it to Claude'); } catch { prompt('Copy this summary:', text); } };
+  if (n) {
+    const h = JSON.parse(store.get('tmHistory', '[]'));
+    h.unshift({ at: startedAt.toISOString(), n, mins, focus: prefs.focus, face: $('sFace').textContent, centred: $('sCentre').textContent });
+    store.set('tmHistory', JSON.stringify(h.slice(0, 10)));
+  }
+  say(n ? `Session over. ${n} shots. Face to path inside 2 degrees on ${$('sFace').textContent}, ${$('sCentre').textContent} centred.` : 'Session over. No shots recorded.', { remember: false });
+}
+function renderHistory() {
+  const h = JSON.parse(store.get('tmHistory', '[]'));
+  $('historyCard').hidden = !h.length;
+  $('history').innerHTML = h.map(s => `<div class="hist"><div>${new Date(s.at).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}<br><span>${s.n} shots · ${s.mins} min · ${s.focus}</span></div>
+    <div style="text-align:right">Face ≤2° ${s.face}<br><span>Centred ${s.centred}</span></div></div>`).join('');
+}
+renderHistory();
 </script></body></html>

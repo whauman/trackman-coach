@@ -32,7 +32,7 @@ export const BASELINE = {
   '8Iron': { typical: 128, target: 132 }, '9Iron': { typical: 118, target: 122 }, PitchingWedge: { typical: 108, target: 112 },
   '50Wedge': { typical: 96 }, '4Hybrid': { typical: 168 }, '3Wood': { typical: 194 }, Driver: { typical: 214 },
 };
-const SPOKEN = { PitchingWedge: 'wedge', SandWedge: 'sand wedge', LobWedge: 'lob wedge', '3Wood': '3 wood', '5Wood': '5 wood',
+const SPOKEN = { PitchingWedge: 'pitching wedge', SandWedge: 'sand wedge', LobWedge: 'lob wedge', '3Wood': '3 wood', '5Wood': '5 wood',
   Driver: 'driver', Putter: 'putter' };
 export const clubName = c => SPOKEN[c] || String(c || 'shot').replace(/^(\d+)(Iron|Hybrid|Wood|Wedge)$/, (_, n, t) => `${n} ${t.toLowerCase()}`);
 
@@ -60,6 +60,7 @@ export function adviseShot(stroke, focus = 'all') {
   if (ht != null && ht < T.lowMm) { tags.push('low'); cues.push({ k: 'strike', p: 4, say: 'Low on the face. Keep your chest over the ball and brush the turf after the ball.' }); }
   if (!partial && f2p != null && f2p <= -T.f2pBad) { tags.push('closed'); cues.push({ k: 'face', p: f2p <= -6 ? 1 : 2, say: `Face ${r0(-f2p)} degrees closed to the path, that's hook spin. Hold the face a touch more open through impact.` }); }
   if (!partial && f2p != null && f2p >= T.f2pBad) { tags.push('open'); cues.push({ k: 'face', p: f2p >= 6 ? 1 : 2, say: `Face ${r0(f2p)} degrees open to the path. Let the face square up through impact.` }); }
+  if (!partial && f2p != null && abs(f2p) >= T.f2pGood && abs(f2p) < T.f2pBad) cues.push({ k: 'face', p: 5, say: `Face ${abs(f2p).toFixed(1)} ${f2p < 0 ? 'closed' : 'open'} to the path. Close, aim for inside 2.` });
   if (!partial && face != null && abs(face) >= T.startLineDeg && (f2p == null || abs(f2p) < T.f2pBad)) { tags.push('startline'); cues.push({ k: 'face', p: 3, say: `Started ${r0(abs(face))} degrees ${face > 0 ? 'right' : 'left'} with the face, check your aim and ball position.` }); }
   if (!partial && path != null && path >= 7) { tags.push('inout'); cues.push({ k: 'path', p: 4, say: `Path ${r0(path)} degrees in to out. Feel the club swing more left after impact.` }); }
   if (typical && carry != null && carry < typical - T.shortM && !tags.some(t => ['heel', 'toe', 'low'].includes(t))) { tags.push('short'); cues.push({ k: 'strike', p: 4, say: `${r0(typical - carry)} short of your normal. Check contact.` }); }
@@ -69,7 +70,10 @@ export function adviseShot(stroke, focus = 'all') {
   const centred = off != null && ht != null && abs(off) < T.centreMm && abs(ht) < T.centreMm;
   const good = !partial && f2p != null && abs(f2p) < T.f2pGood && !tags.some(t => ['heel', 'toe', 'low'].includes(t)) && (side == null || abs(side) <= T.sideM);
   let cue = pool[0]?.say;
-  if (!cue) cue = good ? `Good one. Face to path ${f2p.toFixed(1)}${centred ? ', centred strike' : ''}.` : cues.length ? '' : 'Solid.';
+  if (!cue && good) cue = `Good one. Face to path ${f2p.toFixed(1)}${centred ? ', centred strike' : ''}.`;
+  if (!cue) cue = focus === 'face' && f2p != null && !partial ? `Face square, ${abs(f2p).toFixed(1)} ${f2p < 0 ? 'closed' : 'open'}.`
+    : focus === 'strike' ? (centred ? 'Centred strike.' : 'Strike OK.')
+    : focus === 'path' && path != null && !partial ? `Path ${path.toFixed(1)}, fine.` : 'Solid.';
   return { line, cue, good, tags, f2p, off, ht, centred };
 }
 
@@ -83,3 +87,27 @@ export function summarise(shots) {
   const spread = carries.length ? r0(Math.max(...carries) - Math.min(...carries)) : 0;
   return `Last ${n}: ${goodF2p} of ${n} with face to path inside 2 degrees, ${centred} centred strikes, carry spread ${spread} metres.`;
 }
+
+const median = a => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
+
+/** Per-club session stats for the end-of-session summary. */
+export function sessionStats(shots) {
+  const by = {};
+  for (const s of shots) (by[s.club] ??= []).push(s);
+  return Object.entries(by).map(([club, g]) => {
+    const adv = g.map(s => adviseShot(s)), carries = g.map(s => s.measurement.carry).filter(Number.isFinite);
+    const n = g.length, pct = k => Math.round(100 * k / n);
+    const tagCount = {};
+    adv.forEach(a => a.tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
+    const topIssue = Object.entries(tagCount).sort((a, b) => b[1] - a[1])[0];
+    return { club, name: clubName(club), n, carry: median(carries), typical: BASELINE[club]?.typical ?? null,
+      spread: carries.length ? Math.max(...carries) - Math.min(...carries) : null,
+      f2pGood: pct(adv.filter(a => a.f2p != null && abs(a.f2p) < T.f2pGood).length),
+      centred: pct(adv.filter(a => a.centred).length),
+      left: pct(g.filter(s => s.measurement.carrySide < -T.sideM).length), right: pct(g.filter(s => s.measurement.carrySide > T.sideM).length),
+      good: pct(adv.filter(a => a.good).length), topIssue: topIssue ? { tag: topIssue[0], n: topIssue[1] } : null };
+  }).sort((a, b) => b.n - a.n);
+}
+
+export const TAG_LABEL = { heel: 'Heel strike', toe: 'Toe strike', low: 'Low on face', closed: 'Face closed to path', open: 'Face open to path',
+  startline: 'Off start line', inout: 'Path too in-to-out', short: 'Short of normal' };
