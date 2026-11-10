@@ -55,26 +55,26 @@ export function adviseShot(stroke, focus = 'all') {
   const typical = BASELINE[stroke.club]?.typical;
   const cues = [];
 
-  if (off != null && off < T.heelMm) { tags.push('heel'); cues.push({ k: 'strike', p: off < -15 ? 1 : 3, say: `Heel strike, ${r0(-off)} millimetres. Feel the strike out toward the toe, or put a tee just outside the heel.` }); }
-  if (off != null && off > T.toeMm) { tags.push('toe'); cues.push({ k: 'strike', p: 3, say: `Toe strike, ${r0(off)} millimetres. Feel it more in the centre.` }); }
-  if (ht != null && ht < T.lowMm) { tags.push('low'); cues.push({ k: 'strike', p: 4, say: 'Low on the face. Keep your chest over the ball and brush the turf after the ball.' }); }
-  if (!partial && f2p != null && f2p <= -T.f2pBad) { tags.push('closed'); cues.push({ k: 'face', p: f2p <= -6 ? 1 : 2, say: `Face ${r0(-f2p)} degrees closed to the path, that's hook spin. Hold the face a touch more open through impact.` }); }
-  if (!partial && f2p != null && f2p >= T.f2pBad) { tags.push('open'); cues.push({ k: 'face', p: f2p >= 6 ? 1 : 2, say: `Face ${r0(f2p)} degrees open to the path. Let the face square up through impact.` }); }
-  if (!partial && f2p != null && abs(f2p) >= T.f2pGood && abs(f2p) < T.f2pBad) cues.push({ k: 'face', p: 5, say: `Face ${abs(f2p).toFixed(1)} ${f2p < 0 ? 'closed' : 'open'} to the path. Close, aim for inside 2.` });
-  if (!partial && face != null && abs(face) >= T.startLineDeg && (f2p == null || abs(f2p) < T.f2pBad)) { tags.push('startline'); cues.push({ k: 'face', p: 3, say: `Started ${r0(abs(face))} degrees ${face > 0 ? 'right' : 'left'} with the face, check your aim and ball position.` }); }
-  if (!partial && path != null && path >= 7) { tags.push('inout'); cues.push({ k: 'path', p: 4, say: `Path ${r0(path)} degrees in to out. Feel the club swing more left after impact.` }); }
-  if (typical && carry != null && carry < typical - T.shortM && !tags.some(t => ['heel', 'toe', 'low'].includes(t))) { tags.push('short'); cues.push({ k: 'strike', p: 4, say: `${r0(typical - carry)} short of your normal. Check contact.` }); }
+  if (off != null && off < T.heelMm) { tags.push('heel'); cues.push({ id: 'heel', k: 'strike', p: off < -15 ? 1 : 3, say: `Heel strike, ${r0(-off)} millimetres. Feel the strike out toward the toe, or put a tee just outside the heel.` }); }
+  if (off != null && off > T.toeMm) { tags.push('toe'); cues.push({ id: 'toe', k: 'strike', p: 3, say: `Toe strike, ${r0(off)} millimetres. Feel it more in the centre.` }); }
+  if (ht != null && ht < T.lowMm) { tags.push('low'); cues.push({ id: 'low', k: 'strike', p: 4, say: 'Low on the face. Keep your chest over the ball and brush the turf after the ball.' }); }
+  if (!partial && f2p != null && f2p <= -T.f2pBad) { tags.push('closed'); cues.push({ id: 'closed', k: 'face', p: f2p <= -6 ? 1 : 2, say: `Face ${r0(-f2p)} degrees closed to the path, that's hook spin. Hold the face a touch more open through impact.` }); }
+  if (!partial && f2p != null && f2p >= T.f2pBad) { tags.push('open'); cues.push({ id: 'open', k: 'face', p: f2p >= 6 ? 1 : 2, say: `Face ${r0(f2p)} degrees open to the path. Let the face square up through impact.` }); }
+  if (!partial && f2p != null && abs(f2p) >= T.f2pGood && abs(f2p) < T.f2pBad) cues.push({ id: 'slight', k: 'face', p: 5, say: `Face ${abs(f2p).toFixed(1)} ${f2p < 0 ? 'closed' : 'open'} to the path. Close, aim for inside 2.` });
+  if (!partial && face != null && abs(face) >= T.startLineDeg && (f2p == null || abs(f2p) < T.f2pBad)) { tags.push('startline'); cues.push({ id: 'startline', k: 'face', p: 3, say: `Started ${r0(abs(face))} degrees ${face > 0 ? 'right' : 'left'} with the face, check your aim and ball position.` }); }
+  if (!partial && path != null && path >= 7) { tags.push('inout'); cues.push({ id: 'inout', k: 'path', p: 4, say: `Path ${r0(path)} degrees in to out. Feel the club swing more left after impact.` }); }
+  if (typical && carry != null && carry < typical - T.shortM && !tags.some(t => ['heel', 'toe', 'low'].includes(t))) { tags.push('short'); cues.push({ id: 'short', k: 'strike', p: 4, say: `${r0(typical - carry)} short of your normal. Check contact.` }); }
 
   const pool = focus === 'all' ? cues : cues.filter(c => c.k === focus);
   pool.sort((a, b) => a.p - b.p);
   const centred = off != null && ht != null && abs(off) < T.centreMm && abs(ht) < T.centreMm;
   const good = !partial && f2p != null && abs(f2p) < T.f2pGood && !tags.some(t => ['heel', 'toe', 'low'].includes(t)) && (side == null || abs(side) <= T.sideM);
-  let cue = pool[0]?.say;
+  let cue = pool[0]?.say; const cueId = pool[0]?.id || (good ? 'good' : 'none');
   if (!cue && good) cue = `Good one. Face to path ${f2p.toFixed(1)}${centred ? ', centred strike' : ''}.`;
   if (!cue) cue = focus === 'face' && f2p != null && !partial ? `Face square, ${abs(f2p).toFixed(1)} ${f2p < 0 ? 'closed' : 'open'}.`
     : focus === 'strike' ? (centred ? 'Centred strike.' : 'Strike OK.')
     : focus === 'path' && path != null && !partial ? `Path ${path.toFixed(1)}, fine.` : 'Solid.';
-  return { line, cue, good, tags, f2p, off, ht, centred };
+  return { line, cue, cueId, good, tags, f2p, off, ht, centred, partial, carry, side, face, path, typical, focus };
 }
 
 /** Rolling summary of the last n shots, spoken every n shots. */
@@ -85,7 +85,8 @@ export function summarise(shots) {
   const centred = adv.filter(a => a.centred).length;
   const carries = shots.map(s => s.measurement.carry).filter(v => v != null);
   const spread = carries.length ? r0(Math.max(...carries) - Math.min(...carries)) : 0;
-  return `Last ${n}: ${goodF2p} of ${n} with face to path inside 2 degrees, ${centred} centred strikes, carry spread ${spread} metres.`;
+  const verdict = goodF2p >= n * 0.6 ? 'Good stretch.' : goodF2p <= n * 0.2 ? 'Face control is wandering, slow it down.' : 'Getting there.';
+  return `Last ${n}: ${goodF2p} of ${n} with a square face, ${centred} out of the middle, carries within ${spread} metres. ${verdict}`;
 }
 
 const median = a => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
@@ -142,4 +143,48 @@ export function tourCompare(shots, club) {
     ['Launch', 'launch', '°', 1], ['Spin', 'spin', 'rpm', 0], ['Peak height', 'height', 'm', 0], ['Land angle', 'land', '°', 0], ['Attack', 'attack', '°', 1],
   ].map(([label, key, unit, dp]) => ({ label, key, unit, dp, you: you[key], tour: tour[key] }));
   return { club, n: g.length, rows, scaledCarry, tourCarry: tour.carry };
+}
+
+// ---------- natural speech ----------
+// What the voice says. The screen keeps the precise wording from adviseShot(); speech is phrased the way a coach
+// talks: golfer-style distances ("one thirty-seven"), no repeated club name, varied phrasing, fewer decimals.
+const SPOKEN_CLUB = { PitchingWedge: 'Pitching wedge', SandWedge: 'Sand wedge', LobWedge: 'Lob wedge', Driver: 'Driver', Putter: 'Putter' };
+const spokenClub = c => SPOKEN_CLUB[c] || String(c || '').replace(/^(\d+)(Iron|Hybrid|Wood|Wedge)$/, (_, n, t) =>
+  `${['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'][+n] || n} ${t.toLowerCase()}`);
+/** 137 → "one thirty-seven", 105 → "one oh five", 200 → "two hundred", 94 → "94". */
+export function sayDistance(n) {
+  n = Math.round(n); if (n < 100 || n >= 1000) return String(n);
+  const h = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'][Math.floor(n / 100)], r = n % 100;
+  return r === 0 ? `${h} hundred` : r < 10 ? `${h} oh ${r}` : `${h} ${r}`;
+}
+const degrees = d => { d = Math.abs(d); return d < 1.5 ? 'a degree' : d < 2.5 ? 'two degrees' : `${Math.round(d)} degrees`; };
+const mm = v => `${Math.round(Math.abs(v))} mil`;
+const PHRASES = {
+  heel: a => [`Off the heel, ${mm(a.off)}. Feel it more out toward the toe.`, `Heel strike there. Try a tee just outside the heel and miss it.`, `That one was heely. Stand a fraction further from the ball.`],
+  toe: a => [`Bit off the toe. Feel it in the middle.`, `Toe strike, ${mm(a.off)}. Centre it up.`, `Out of the toe that time.`],
+  low: () => [`Caught it low on the face. Chest over the ball, brush the turf after it.`, `Bit thin. Stay down through it.`, `Low strike. Keep your chest over it.`],
+  closed: a => [`That's hooking. Face was ${degrees(a.f2p)} shut to the path. Hold it a touch more open.`, `Closed face, ${degrees(a.f2p)}. Feel the face stay a little open through the ball.`, `Hook spin there, ${degrees(a.f2p)} closed. Quieter hands through impact.`],
+  open: a => [`Face was ${degrees(a.f2p)} open to the path. Let it square up.`, `That one's leaking right, face open ${degrees(a.f2p)}. Let the hands release.`, `Open face there. Feel the toe turn over through impact.`],
+  slight: a => [`Just a touch ${a.f2p < 0 ? 'closed' : 'open'}. Nearly there.`, `Close. Face a fraction ${a.f2p < 0 ? 'shut' : 'open'} to the path.`, `Almost square. Tiny bit ${a.f2p < 0 ? 'closed' : 'open'}.`],
+  startline: a => [`Started ${degrees(a.face)} ${a.face > 0 ? 'right' : 'left'}. Check your aim and ball position.`, `Start line was ${a.face > 0 ? 'right' : 'left'}. Have a look at your alignment.`],
+  inout: a => [`Path's ${degrees(a.path)} in to out. Feel the club swing more left after impact.`, `Very in to out there. Turn through and swing left.`],
+  short: a => [`That's ${Math.round(a.typical - a.carry)} short of your normal. Check the contact.`, `Came up ${Math.round(a.typical - a.carry)} short. Strike it a bit more solidly.`],
+  good: a => [`Lovely. Square face${a.centred ? ', right out of the middle' : ''}.`, `That's the one.${a.centred ? ' Great strike.' : ''}`, `Great swing. Face square to the path.`, `Perfect. Do that again.`],
+  none: a => a.focus === 'strike' ? (a.centred ? [`Good, out of the middle.`, `Nice centred strike.`] : [`Strike's okay.`, `Decent contact.`])
+    : a.focus === 'face' && a.f2p != null && !a.partial ? [`Face nice and square.`, `Good face control.`, `Square to the path.`] : [`Solid.`, `Good.`, `Nice.`],
+};
+let lastPhrase = '';
+function pick(list) { const opts = list.filter(p => p !== lastPhrase); const p = opts[Math.floor(Math.random() * opts.length)] || list[0]; lastPhrase = p; return p; }
+
+/** Natural spoken version of a shot: { line, cue }. prevClub suppresses the club name when it hasn't changed. */
+export function speakShot(stroke, focus = 'all', prevClub = null) {
+  const a = adviseShot(stroke, focus);
+  const parts = [];
+  if (stroke.club !== prevClub) parts.push(spokenClub(stroke.club) + '.');
+  if (a.carry != null) {
+    const side = a.side == null ? '' : Math.abs(a.side) < 3 ? 'right on line' : `${Math.round(Math.abs(a.side))} ${a.side > 0 ? 'right' : 'left'}`;
+    parts.push(`${sayDistance(a.carry)}${side ? ', ' + side : ''}.`);
+  }
+  const make = PHRASES[a.cueId] || PHRASES.none;
+  return { line: parts.join(' '), cue: pick(make(a)), advice: a };
 }
