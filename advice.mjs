@@ -6,7 +6,7 @@
 export const API = 'https://api.trackmangolf.com/graphql';
 
 const STROKE_FIELDS = `time club measurement { carry total carrySide ballSpeed clubSpeed smashFactor launchAngle
-  launchDirection spinRate faceAngle clubPath faceToPath attackAngle dynamicLoft impactOffset impactHeight maxHeight }`;
+  launchDirection spinRate faceAngle clubPath faceToPath attackAngle dynamicLoft impactOffset impactHeight maxHeight landingAngle }`;
 export const SESSIONS_QUERY = `query($from: DateTime) { me { activities(timeFrom: $from, take: 10,
   kinds: [SIMULATOR, VIRTUAL_RANGE, SHOT_ANALYSIS]) { items { id kind time
   ... on SimulatorSessionActivity { strokeCount strokes { ${STROKE_FIELDS} } }
@@ -111,3 +111,35 @@ export function sessionStats(shots) {
 
 export const TAG_LABEL = { heel: 'Heel strike', toe: 'Toe strike', low: 'Low on face', closed: 'Face closed to path', open: 'Face open to path',
   startline: 'Off start line', inout: 'Path too in-to-out', short: 'Short of normal' };
+
+// Commonly cited TrackMan PGA Tour averages (club mph, ball mph, smash, attack °, launch °, spin rpm, peak height yd,
+// landing angle °, carry yd). These figures are several years old; treat them as approximate.
+const TOUR_RAW = {
+  Driver: [113, 167, 1.48, -1.3, 10.9, 2686, 32, 37, 275], '3Wood': [107, 158, 1.48, -2.9, 9.2, 3655, 30, 43, 243],
+  '5Wood': [103, 152, 1.47, -3.3, 9.4, 4350, 31, 47, 230], Hybrid: [100, 146, 1.46, -3.5, 10.2, 4437, 29, 47, 225],
+  '3Iron': [98, 142, 1.45, -3.1, 10.4, 4630, 27, 46, 212], '4Iron': [96, 137, 1.43, -3.4, 11.0, 4836, 28, 48, 203],
+  '5Iron': [94, 132, 1.41, -3.7, 12.1, 5361, 31, 49, 194], '6Iron': [92, 127, 1.38, -4.1, 14.1, 6231, 30, 50, 183],
+  '7Iron': [90, 120, 1.33, -4.3, 16.3, 7097, 32, 50, 172], '8Iron': [87, 115, 1.32, -4.5, 18.1, 7998, 31, 50, 160],
+  '9Iron': [85, 109, 1.28, -4.7, 20.4, 8647, 30, 51, 148], PitchingWedge: [83, 102, 1.23, -5.0, 24.2, 9304, 29, 52, 136],
+};
+const YD = 0.9144, MPH = 2.23694; // API speeds are m/s
+const tourKey = c => TOUR_RAW[c] ? c : /Hybrid$/.test(c) ? 'Hybrid' : null;
+export const hasTour = c => !!tourKey(c);
+
+/** Your session medians for one club next to the Tour average. Carry is also given scaled to your ball speed
+ *  (carry ∝ ball speed^1.25, fitted on this player's own shots), which is the fairer target. */
+export function tourCompare(shots, club) {
+  const k = tourKey(club); if (!k) return null;
+  const [cs, bs, sm, aoa, la, spin, ht, land, carry] = TOUR_RAW[k];
+  const g = shots.filter(s => s.club === club).map(s => s.measurement);
+  const med = f => median(g.map(f).filter(v => v != null && Number.isFinite(v)));
+  const you = { carry: med(m => m.carry), ball: med(m => m.ballSpeed * MPH), club: med(m => m.clubSpeed * MPH), smash: med(m => m.smashFactor),
+    launch: med(m => m.launchAngle), spin: med(m => m.spinRate), height: med(m => m.maxHeight), land: med(m => m.landingAngle), attack: med(m => m.attackAngle) };
+  const tour = { carry: carry * YD, ball: bs, club: cs, smash: sm, launch: la, spin, height: ht * YD, land, attack: aoa };
+  const scaledCarry = you.ball ? tour.carry * (you.ball / bs) ** 1.25 : null;
+  const rows = [
+    ['Carry', 'carry', 'm', 0], ['Ball speed', 'ball', 'mph', 0], ['Club speed', 'club', 'mph', 0], ['Smash', 'smash', '', 2],
+    ['Launch', 'launch', '°', 1], ['Spin', 'spin', 'rpm', 0], ['Peak height', 'height', 'm', 0], ['Land angle', 'land', '°', 0], ['Attack', 'attack', '°', 1],
+  ].map(([label, key, unit, dp]) => ({ label, key, unit, dp, you: you[key], tour: tour[key] }));
+  return { club, n: g.length, rows, scaledCarry, tourCarry: tour.carry };
+}

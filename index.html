@@ -108,6 +108,16 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
 .ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ch b{font-weight:600}.ch span{color:var(--label2);font-size:15px}
 .cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cg .k{font-size:12px;color:var(--label2)}
 .cg .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}.cg .d{font-size:12px;color:var(--label2)}
+.tourhero{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px 16px 10px}
+.tourhero .k{font-size:12px;color:var(--label2)}.tourhero .v{font-size:24px;font-weight:700;margin-top:2px}
+.tourhero > div:nth-child(2) .v{color:var(--blue)}
+.trow{display:grid;grid-template-columns:1fr 88px 48px 56px;white-space:nowrap;align-items:center;gap:8px;padding:9px 16px;position:relative;font-size:15px;letter-spacing:-.24px}
+.trow::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.trow .y,.trow .t{text-align:right;font-variant-numeric:tabular-nums}.trow .y{font-weight:600}.trow .t{color:var(--label2)}
+.trow.head{font-size:12px;color:var(--label2);padding-top:4px;padding-bottom:4px}.trow.head::before{display:none}
+.tbar{height:6px;border-radius:3px;background:var(--fill);position:relative;overflow:hidden}
+.tbar i{position:absolute;top:0;bottom:0;left:0;border-radius:3px;background:var(--blue)}
+.tbar b{position:absolute;top:-2px;bottom:-2px;width:2px;left:calc(100% / 1.5 - 1px);background:var(--label);opacity:.6}
 .hist{display:flex;justify-content:space-between;gap:8px;padding:11px 16px;position:relative;font-size:15px}
 .hist+.hist::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
 .hist span{color:var(--label2);font-size:13px}
@@ -169,6 +179,12 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
       <button class="chip" data-v="face">Face</button><button class="chip" data-v="strike">Strike</button><button class="chip" data-v="path">Path</button><button class="chip" data-v="all">All</button>
     </div></div>
   </div></div>
+  <div class="section" id="tourCard" hidden><div class="header" id="tourHead">vs Tour average</div><div class="group">
+    <div class="tourhero"><div><div class="k">Your carry</div><div class="v rounded num" id="tourYou">–</div></div>
+      <div><div class="k">At your speed</div><div class="v rounded num" id="tourScaled">–</div></div>
+      <div><div class="k">Tour average</div><div class="v rounded num" id="tourAvg">–</div></div></div>
+    <div id="tourRows"></div></div>
+    <div class="footer">Session medians for this club vs commonly cited TrackMan PGA Tour averages (several years old, approximate). “At your speed” scales Tour carry to your ball speed.</div></div>
   <div class="section charts">
     <div class="group"><div class="h">Strike map</div><svg id="faceMap" viewBox="0 0 160 112" role="img" aria-label="Impact locations on the clubface"></svg></div>
     <div class="group"><div class="h">Dispersion</div><svg id="dispMap" viewBox="0 0 160 112" role="img" aria-label="Shot dispersion"></svg></div>
@@ -201,7 +217,7 @@ svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,s
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { fetchSessions, allStrokes, adviseShot, summarise, sessionStats, clubName, BASELINE, T, TAG_LABEL } from './advice.mjs';
+import { fetchSessions, allStrokes, adviseShot, summarise, sessionStats, clubName, BASELINE, T, TAG_LABEL, tourCompare } from './advice.mjs';
 const $ = id => document.getElementById(id);
 const store = { get: (k, d) => localStorage.getItem(k) ?? d, set: (k, v) => localStorage.setItem(k, v) };
 
@@ -262,7 +278,7 @@ $('start').onclick = async () => {
   if (daysLeft(token) <= 0) { showToken(); return toast('Sign-in needed'); }
   say('Coach ready. Focus: ' + { face: 'face control', strike: 'strike location', path: 'swing path', all: 'everything' }[prefs.focus] + '.', { remember: false });
   keepAwake(); startedAt = new Date(); shots = []; seen.clear(); first = true; paused = false;
-  $('list').innerHTML = '<div class="empty">None yet.</div>'; renderGoal(); drawCharts();
+  $('list').innerHTML = '<div class="empty">None yet.</div>'; renderGoal(); drawCharts(); $('tourCard').hidden = true;
   show('live'); $('dock').hidden = false; setPill('live', 'Live');
   await tick(); timer = setInterval(() => !paused && tick(), 5000);
   clock = setInterval(updateMeta, 1000);
@@ -306,7 +322,7 @@ async function tick() {
     const before = shots.length; shots.push(...fresh);
     fresh.forEach((s, i) => addRow(s, before + i + 1));
     const last = fresh.at(-1), a = renderHero(last);
-    renderGoal(); drawCharts();
+    renderGoal(); drawCharts(); renderTour(last.club);
     const lead = fresh.length > 1 ? `${fresh.length} new shots. Latest: ` : '';
     say(lead + (prefs.speak === 'cue' ? a.cue : prefs.speak === 'line' ? a.line : `${a.line} ${a.cue}`));
     const every = +prefs.every;
@@ -343,6 +359,30 @@ const GOALS = {
   path: { label: 'Path between 0° and +5°', test: (a, s) => s.measurement.clubPath >= 0 && s.measurement.clubPath <= 5, base: null },
   all: { label: 'Good shots (square, solid, on line)', test: a => a.good, base: null },
 };
+// ---------- vs Tour ----------
+const fmt = (v, dp) => v == null || !Number.isFinite(v) ? '–' : dp ? v.toFixed(dp) : Math.round(v).toLocaleString();
+function renderTour(club) {
+  const c = tourCompare(shots, club);
+  $('tourCard').hidden = !c; if (!c) return;
+  $('tourHead').textContent = `${cap(clubName(club))} vs Tour average · ${c.n} shot${c.n === 1 ? '' : 's'}`;
+  const carry = c.rows[0].you;
+  $('tourYou').textContent = carry == null ? '–' : r0(carry) + ' m';
+  $('tourScaled').textContent = c.scaledCarry == null ? '–' : r0(c.scaledCarry) + ' m';
+  $('tourAvg').textContent = r0(c.tourCarry) + ' m';
+  // Bar: your value as a share of Tour; the tick marks Tour (bar spans 0–150% of Tour). Attack angle is skipped (negative values).
+  $('tourRows').innerHTML = `<div class="trow head"><span>Metric</span><span class="y">You</span><span class="t">Tour</span><span></span></div>` +
+    c.rows.slice(1).map(r => {
+      const ratio = r.you != null && r.tour ? Math.max(0, Math.min(1.5, r.you / r.tour)) : null;
+      const bar = r.key === 'attack' || ratio == null ? '' : `<div class="tbar"><i style="width:${(ratio / 1.5 * 100).toFixed(0)}%"></i><b></b></div>`;
+      return `<div class="trow"><span>${r.label}</span><span class="y">${fmt(r.you, r.dp)}${r.unit && r.you != null ? (r.unit === '°' ? '°' : ' ' + r.unit) : ''}</span><span class="t">${fmt(r.tour, r.dp)}</span>${bar || '<span></span>'}</div>`;
+    }).join('');
+}
+const tourLine = club => { const c = tourCompare(shots, club); if (!c || c.scaledCarry == null) return '';
+  return `<div class="footer" style="padding:8px 0 0">Tour avg ${r0(c.tourCarry)} m · at your ball speed ${r0(c.scaledCarry)} m · ball speed ${fmt(c.rows[1].you, 0)} vs ${c.rows[1].tour} mph</div>`; };
+const tourText = club => { const c = tourCompare(shots, club); if (!c || c.scaledCarry == null) return '';
+  const g = k => c.rows.find(r => r.key === k);
+  return `; vs Tour: carry ${r0(c.tourCarry)} m (at my speed ${r0(c.scaledCarry)}), ball ${fmt(g('ball').you, 0)}/${g('ball').tour} mph, launch ${fmt(g('launch').you, 1)}/${g('launch').tour}°, spin ${fmt(g('spin').you, 0)}/${g('spin').tour}, peak ${fmt(g('height').you, 0)}/${r0(g('height').tour)} m, land ${fmt(g('land').you, 0)}/${g('land').tour}°`; };
+
 function renderGoal() {
   const g = GOALS[prefs.focus], hits = shots.filter(s => g.test(adviseShot(s), s)).length, pct = shots.length ? Math.round(100 * hits / shots.length) : 0;
   $('goalLabel').textContent = g.label; $('goalNum').textContent = shots.length ? pct + '%' : '–';
@@ -402,10 +442,10 @@ function renderSummary() {
     <div><div class="k">Carry</div><div class="v">${c.carry == null ? '–' : r0(c.carry) + ' m'}</div><div class="d">${c.carry != null && c.typical ? (c.carry - c.typical >= 0 ? '+' : '') + r0(c.carry - c.typical) + ' vs normal' : ''}</div></div>
     <div><div class="k">Face ≤2°</div><div class="v">${c.f2pGood}%</div></div>
     <div><div class="k">Centred</div><div class="v">${c.centred}%</div></div>
-    <div><div class="k">Miss L / R</div><div class="v">${c.left}/${c.right}%</div></div></div></div>`).join('');
+    <div><div class="k">Miss L / R</div><div class="v">${c.left}/${c.right}%</div></div></div>${tourLine(c.club)}</div>`).join('');
   const text = [`TrackMan session ${startedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC, ${mins} min, ${n} shots, focus: ${prefs.focus}.`,
     `Face-to-path within 2°: ${$('sFace').textContent}. Centred strikes: ${$('sCentre').textContent}. ${$('sTake').textContent}`,
-    ...stats.map(c => `${c.name}: ${c.n} shots, carry ${c.carry == null ? '–' : r0(c.carry)} m, face≤2° ${c.f2pGood}%, centred ${c.centred}%, >10m left ${c.left}% / right ${c.right}%` + (c.topIssue ? `, top issue ${TAG_LABEL[c.topIssue.tag]} ×${c.topIssue.n}` : ''))].join('\n');
+    ...stats.map(c => `${c.name}: ${c.n} shots, carry ${c.carry == null ? '–' : r0(c.carry)} m, face≤2° ${c.f2pGood}%, centred ${c.centred}%, >10m left ${c.left}% / right ${c.right}%` + (c.topIssue ? `, top issue ${TAG_LABEL[c.topIssue.tag]} ×${c.topIssue.n}` : '') + tourText(c.club))].join('\n');
   $('copy').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Copied — paste it to Claude'); } catch { prompt('Copy this summary:', text); } };
   if (n) {
     const h = JSON.parse(store.get('tmHistory', '[]'));
