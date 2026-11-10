@@ -1,170 +1,202 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Coach">
-<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="apple-touch-icon.png">
-<title>TrackMan Coach</title>
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-512.png"><link rel="manifest" href="manifest.webmanifest">
+<title>Coach</title>
 <style>
-:root{color-scheme:dark;--bg:#0d0d0d;--card:#1a1a19;--card2:#232322;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--line:#2c2c2a;--axis:#383835;
-  --accent:#3987e5;--accent-ink:#fff;--good:#0ca30c;--warn:#fab219;--bad:#e66767;--radius:16px}
-@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f9f9f7;--card:#fcfcfb;--card2:#f0efec;--ink:#0b0b0b;--ink2:#52514e;--line:#e1e0d9;--axis:#c3c2b7;
-  --accent:#2a78d6;--good:#006300;--warn:#a86b00;--bad:#d03b3b}}
+/* Design language: Apple Human Interface Guidelines (iOS). System colours, SF type scale, inset grouped lists,
+   segmented controls, translucent toolbar. Colours below are the iOS semantic system colours. */
+:root{color-scheme:light dark;
+  --bg:#f2f2f7;--cell:#fff;--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.08);--label:#000;--label2:rgba(60,60,67,.6);--label3:rgba(60,60,67,.3);
+  --sep:rgba(60,60,67,.29);--blue:#007aff;--green:#34c759;--green-ink:#248a3d;--orange:#ff9500;--orange-ink:#c93400;--red:#ff3b30;--red-ink:#d70015;
+  --seg-on:#fff;--bar:rgba(249,249,249,.78);
+  /* names the chart code uses */
+  --card:var(--cell);--card2:var(--fill);--axis:var(--label3);--muted:var(--label2);--accent:var(--blue);--good:var(--green)}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#000;--cell:#1c1c1e;--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.16);--label:#fff;--label2:rgba(235,235,245,.6);--label3:rgba(235,235,245,.3);
+  --sep:rgba(84,84,88,.65);--blue:#0a84ff;--green:#30d158;--green-ink:#30d158;--orange:#ff9f0a;--orange-ink:#ff9f0a;--red:#ff453a;--red-ink:#ff6961;
+  --seg-on:#636366;--bar:rgba(22,22,23,.8)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
-  padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom))}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.top h1{font-size:20px;margin:0;flex:1;letter-spacing:-.01em}
-.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--card2);color:var(--ink2)}
-.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.pill.live .dot{background:var(--good);box-shadow:0 0 0 0 var(--good);animation:pulse 1.6s infinite}
-.pill.paused .dot{background:var(--warn)}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--good) 60%,transparent)}100%{box-shadow:0 0 0 8px transparent}}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--label);font:17px/1.29 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;letter-spacing:-.41px;
+  padding:env(safe-area-inset-top) 16px calc(100px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:active{opacity:.55}
+.rounded{font-family:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif}
+.num{font-variant-numeric:tabular-nums}
+/* nav bar: large title */
+.nav{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 4px 8px}
+.nav h1{font-size:34px;line-height:41px;font-weight:700;letter-spacing:.37px;margin:0}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;letter-spacing:-.08px;padding:5px 10px;border-radius:999px;background:var(--fill);color:var(--label2);margin-bottom:8px}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--label3)}
+.pill.live{color:var(--green-ink)}.pill.live .dot{background:var(--green);animation:pulse 1.6s infinite}
+.pill.paused{color:var(--orange-ink)}.pill.paused .dot{background:var(--orange)}
+@keyframes pulse{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.pill.live .dot{animation:none}}
-.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:9px 14px;border-radius:999px;background:var(--card2);color:var(--ink2);font-size:14px;font-weight:600;border:1px solid transparent}
-.chip[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--ink);border-color:var(--accent)}
-.big-btn{width:100%;padding:16px;border-radius:14px;background:var(--accent);color:var(--accent-ink);font-size:17px;font-weight:700;margin-top:6px}
-input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.row{display:flex;gap:12px;align-items:center}
+.sub{font-size:15px;color:var(--label2);padding:0 4px 4px;letter-spacing:-.24px}
+/* inset grouped sections */
+.section{margin-top:22px}
+.header{font-size:13px;letter-spacing:-.08px;text-transform:uppercase;color:var(--label2);padding:0 16px 7px}
+.footer{font-size:13px;letter-spacing:-.08px;color:var(--label2);padding:7px 16px 0}
+.group{background:var(--cell);border-radius:10px;overflow:hidden}
+.cell{display:flex;align-items:center;gap:12px;min-height:44px;padding:11px 16px;position:relative}
+.cell+.cell::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.cell .grow{flex:1}.cell .val{color:var(--label2)}
+.cell input[type=text]{flex:1;font:inherit;border:0;background:none;color:var(--label);outline:none;min-width:0}
+.cell input[type=range]{flex:1;accent-color:var(--blue)}
+.cell.action{color:var(--blue);justify-content:center}
+.cell.destructive{color:var(--red)}
+/* segmented control */
+.seg{display:flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px;width:100%}
+.seg .chip{flex:1;font-size:13px;font-weight:500;letter-spacing:-.08px;padding:7px 4px;border-radius:7px;color:var(--label);transition:background .2s}
+.seg .chip[aria-pressed=true]{background:var(--seg-on);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
+.seg .chip:active{opacity:1}
+/* buttons */
+.filled{display:block;width:100%;padding:15px;border-radius:14px;background:var(--blue);color:#fff;font-size:17px;font-weight:600;margin-top:22px}
+.tinted{display:block;width:100%;padding:15px;border-radius:14px;background:var(--fill2);color:var(--blue);font-size:17px;font-weight:600;margin-top:10px}
+.ok{color:var(--green-ink)}.warn{color:var(--orange-ink)}.no{color:var(--red-ink)}
+.ok::before,.warn::before,.no::before{display:inline-block;width:1.1em;font-weight:700}
+.ok::before{content:"✓"}.warn::before{content:"≈"}.no::before{content:"!"}
 /* hero */
-.hero .club{font-size:14px;font-weight:600;color:var(--ink2);display:flex;justify-content:space-between}
-.hero .carry{font-size:64px;font-weight:800;letter-spacing:-.03em;line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
-.hero .carry small{font-size:22px;font-weight:600;color:var(--ink2);margin-left:4px}
-.hero .side{font-size:17px;color:var(--ink2);font-variant-numeric:tabular-nums}
-.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
-.tile{background:var(--card2);border-radius:12px;padding:10px}
-.tile .k{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-.tile .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
-.tile .s{font-size:12px;font-weight:600;margin-top:2px}
-.warn{color:var(--warn)}.warn::before{content:"~ "}.ok{color:var(--good)}.ok::before{content:"✓ "}.no{color:var(--bad)}.no::before{content:"! "}
-.cue{font-size:19px;line-height:1.35;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.cue.praise{color:var(--good)}
-/* goal */
-.goal .head{display:flex;justify-content:space-between;align-items:baseline}
-.goal .num{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
-.bar{height:10px;border-radius:999px;background:var(--card2);overflow:hidden;margin-top:8px}
-.bar>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
-.goal .sub{font-size:13px;color:var(--muted);margin-top:6px}
+.hero{padding:16px}
+.hero .top{display:flex;justify-content:space-between;font-size:15px;font-weight:600;color:var(--label2);letter-spacing:-.24px}
+.hero .carry{font-size:76px;line-height:1;font-weight:700;letter-spacing:-1.5px;margin:8px 0 4px}
+.hero .carry small{font-size:24px;font-weight:600;color:var(--label2);margin-left:4px;letter-spacing:0}
+.hero .side{font-size:17px;color:var(--label2)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.tile{background:var(--fill2);border-radius:12px;padding:10px 10px 9px}
+.tile .k{font-size:12px;color:var(--label2);font-weight:500;letter-spacing:0}
+.tile .v{font-size:22px;font-weight:700;margin-top:3px}
+.tile .s{font-size:12px;font-weight:600;margin-top:3px;letter-spacing:0}
+.cue{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:.38px;margin-top:16px;padding-top:14px;border-top:.5px solid var(--sep)}
+.cue.praise{color:var(--green-ink)}
+/* goal ring */
+.goal{display:flex;gap:16px;align-items:center;padding:16px}
+.ring{width:84px;height:84px;flex:none;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-size:22px;font-weight:700}
+.goal .title{font-size:17px;font-weight:600}.goal .detail{font-size:15px;color:var(--label2);margin-top:4px;letter-spacing:-.24px}
 /* charts */
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.charts .card{margin:0;padding:12px}
+.charts .group{padding:12px}
+.charts .h{font-size:13px;font-weight:600;color:var(--label2);margin-bottom:6px;letter-spacing:-.08px}
 svg{display:block;width:100%;height:auto;overflow:visible}
-svg text{font-size:10px;fill:var(--muted)}
-/* list */
-.shot{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
-.shot:first-of-type{border-top:0}
-.shot .n{color:var(--muted);width:28px;font-variant-numeric:tabular-nums}
-.shot .body{flex:1}.shot .t{font-weight:600}.shot .c{color:var(--ink2);font-size:13px;margin-top:2px}
-.tag{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--card2);color:var(--ink2);margin-left:4px;font-weight:600;white-space:nowrap}
-.mark{width:18px;font-weight:800}.mark.g{color:var(--good)}.mark.b{color:var(--bad)}
-/* dock */
-.dock{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
-  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.dock button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:12px;background:var(--card2);font-size:12px;font-weight:600;color:var(--ink2)}
-.dock button svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.dock button.end{background:color-mix(in srgb,var(--bad) 18%,var(--card2));color:var(--ink)}
-.dock button[aria-pressed=true]{background:color-mix(in srgb,var(--accent) 22%,var(--card2));color:var(--ink)}
+svg text{font-size:10px;fill:var(--label2);font-family:-apple-system,system-ui,sans-serif}
+/* shot list cells */
+.shot{display:flex;gap:10px;padding:11px 16px;position:relative;font-size:15px;letter-spacing:-.24px}
+.shot+.shot::before{content:"";position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--sep)}
+.shot .n{color:var(--label3);width:26px;font-variant-numeric:tabular-nums;font-size:13px;padding-top:2px}
+.shot .body{flex:1}.shot .t{font-weight:600}.shot .c{color:var(--label2);font-size:13px;margin-top:2px;letter-spacing:-.08px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--fill);color:var(--label2);margin:3px 4px 0 0;font-weight:600;letter-spacing:.07px}
+.mark{width:16px;font-weight:700;padding-top:1px}.mark.g{color:var(--green)}.mark.b{color:var(--red)}
+.empty{padding:14px 16px;color:var(--label2);font-size:15px}
+/* toolbar */
+.dock{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bar);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr)}
+.dock button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;font-size:10px;font-weight:500;letter-spacing:.12px;color:var(--blue)}
+.dock button svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dock button.end{color:var(--red)}
+.dock button[aria-pressed=true] svg{fill:currentColor;fill-opacity:.15}
 /* summary */
-.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stat3 .tile .v{font-size:26px}
-.crow{padding:12px 0;border-top:1px solid var(--line)}.crow:first-child{border-top:0;padding-top:0}
-.ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ch span{color:var(--muted);font-size:13px}
-.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cg .k{font-size:11px;color:var(--muted);font-weight:600}
-.cg .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}.cg .d{font-size:11px;color:var(--ink2)}
-.ghost{width:100%;padding:14px;border-radius:14px;background:var(--card2);font-weight:700;margin-top:8px}
-.hist{font-size:14px;padding:10px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
-.hist:first-of-type{border-top:0}.hist span{color:var(--muted);font-size:13px}
-.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 16px 0}
+.stat3 .tile .v{font-size:28px}
+#sTake{margin:16px;padding-top:14px;font-size:17px;font-weight:400;letter-spacing:-.41px}
+.crow{padding:12px 16px;position:relative}.crow+.crow::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.ch b{font-weight:600}.ch span{color:var(--label2);font-size:15px}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cg .k{font-size:12px;color:var(--label2)}
+.cg .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}.cg .d{font-size:12px;color:var(--label2)}
+.hist{display:flex;justify-content:space-between;gap:8px;padding:11px 16px;position:relative;font-size:15px}
+.hist+.hist::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.hist span{color:var(--label2);font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--bar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  color:var(--label);padding:10px 16px;border-radius:999px;font-size:15px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.15)}
 [hidden]{display:none!important}
 </style></head><body>
 
-<div class="top"><h1>TrackMan Coach</h1><span class="pill" id="pill"><span class="dot"></span><span id="pillText">Ready</span></span></div>
+<header class="nav"><h1 id="navTitle">Coach</h1><span class="pill" id="pill"><span class="dot"></span><span id="pillText">Ready</span></span></header>
 
 <!-- SETUP -->
 <section id="setup">
-  <div class="card">
-    <p class="label">Today's focus</p>
-    <div class="chips" data-group="focus">
-      <button class="chip" data-v="face">Face control</button><button class="chip" data-v="strike">Strike</button>
-      <button class="chip" data-v="path">Path</button><button class="chip" data-v="all">Everything</button>
-    </div>
-  </div>
-  <div class="card">
-    <p class="label">Voice</p>
-    <div class="chips" data-group="speak">
-      <button class="chip" data-v="both">Result + tip</button><button class="chip" data-v="cue">Tip only</button>
-      <button class="chip" data-v="line">Result only</button><button class="chip" data-v="off">Silent</button>
-    </div>
-    <div class="row" style="margin-top:14px"><span class="meta" style="width:70px">Speed</span><input type="range" id="rate" min="0.8" max="1.4" step="0.05"></div>
-    <p class="label" style="margin-top:16px">Spoken summary</p>
-    <div class="chips" data-group="every"><button class="chip" data-v="5">Every 5 shots</button><button class="chip" data-v="10">Every 10</button><button class="chip" data-v="0">Off</button></div>
-  </div>
-  <div class="card" id="tokenCard">
-    <p class="label">TrackMan sign-in</p>
-    <div class="meta" id="tokenStatus"></div>
-    <div id="tokenRow" style="margin-top:8px"><input type="text" id="token" autocomplete="off" placeholder="Paste the link Claude sent you"></div>
-  </div>
-  <button class="big-btn" id="start">Start session</button>
-  <div class="card" id="historyCard" style="margin-top:12px" hidden><p class="label">Recent sessions</p><div id="history"></div></div>
+  <div class="sub">Spoken TrackMan feedback after every shot.</div>
+  <div class="section"><div class="header">Today's focus</div>
+    <div class="group"><div class="cell"><div class="seg" data-group="focus">
+      <button class="chip" data-v="face">Face</button><button class="chip" data-v="strike">Strike</button><button class="chip" data-v="path">Path</button><button class="chip" data-v="all">All</button>
+    </div></div></div>
+    <div class="footer">Advice and the progress ring follow this. You can change it mid-session.</div></div>
+  <div class="section"><div class="header">Voice</div>
+    <div class="group">
+      <div class="cell"><div class="seg" data-group="speak">
+        <button class="chip" data-v="both">Both</button><button class="chip" data-v="cue">Tip</button><button class="chip" data-v="line">Result</button><button class="chip" data-v="off">Off</button>
+      </div></div>
+      <div class="cell"><span>Speed</span><input type="range" id="rate" min="0.8" max="1.4" step="0.05"></div>
+      <div class="cell"><span class="grow">Summary</span><div class="seg" data-group="every" style="width:62%">
+        <button class="chip" data-v="5">5 shots</button><button class="chip" data-v="10">10</button><button class="chip" data-v="0">Off</button></div></div>
+    </div></div>
+  <div class="section" id="tokenCard"><div class="header">TrackMan</div>
+    <div class="group">
+      <div class="cell"><span class="grow" id="tokenStatus"></span></div>
+      <div class="cell" id="tokenRow"><input type="text" id="token" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste the link Claude sent you"></div>
+    </div></div>
+  <button class="filled" id="start">Start Session</button>
+  <div class="section" id="historyCard" hidden><div class="header">Recent sessions</div><div class="group" id="history"></div></div>
 </section>
 
 <!-- LIVE -->
 <section id="live" hidden>
-  <div class="meta" id="liveMeta" style="margin:-4px 0 10px">Waiting for your first shot…</div>
-  <div class="card hero">
-    <div class="club"><span id="hClub">—</span><span id="hNum"></span></div>
-    <div class="carry" id="hCarry">—</div>
-    <div class="side" id="hSide">Hit a shot to begin</div>
+  <div class="sub num" id="liveMeta">Waiting for your first shot…</div>
+  <div class="section" style="margin-top:12px"><div class="group hero">
+    <div class="top"><span id="hClub">—</span><span id="hNum" class="num"></span></div>
+    <div class="carry rounded num" id="hCarry">—</div>
+    <div class="side num" id="hSide">Hit a shot to begin</div>
     <div class="tiles">
-      <div class="tile"><div class="k">Face / path</div><div class="v" id="tF2p">–</div><div class="s" id="sF2p"></div></div>
-      <div class="tile"><div class="k">Strike</div><div class="v" id="tStrike">–</div><div class="s" id="sStrike"></div></div>
-      <div class="tile"><div class="k">Start line</div><div class="v" id="tStart">–</div><div class="s" id="sStart"></div></div>
+      <div class="tile"><div class="k">Face to path</div><div class="v rounded num" id="tF2p">–</div><div class="s" id="sF2p"></div></div>
+      <div class="tile"><div class="k">Strike</div><div class="v rounded num" id="tStrike">–</div><div class="s" id="sStrike"></div></div>
+      <div class="tile"><div class="k">Start line</div><div class="v rounded num" id="tStart">–</div><div class="s" id="sStart"></div></div>
     </div>
     <div class="cue" id="cue">Advice appears here after each shot.</div>
-  </div>
-  <div class="card goal">
-    <div class="head"><span class="label" id="goalLabel" style="margin:0">Goal</span><span class="num" id="goalNum">–</span></div>
-    <div class="bar"><i id="goalBar" style="width:0"></i></div>
-    <div class="sub" id="goalSub"></div>
-    <div class="chips" data-group="focus" style="margin-top:12px">
-      <button class="chip" data-v="face">Face</button><button class="chip" data-v="strike">Strike</button>
-      <button class="chip" data-v="path">Path</button><button class="chip" data-v="all">All</button>
+  </div></div>
+  <div class="section"><div class="header">Goal</div><div class="group">
+    <div class="goal">
+      <div class="ring"><svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="36" fill="none" stroke="var(--fill)" stroke-width="10"/>
+        <circle id="goalBar" cx="42" cy="42" r="36" fill="none" stroke="var(--blue)" stroke-width="10" stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="226.2" style="transition:stroke-dashoffset .4s"/></svg>
+        <div class="pct rounded num" id="goalNum">–</div></div>
+      <div><div class="title" id="goalLabel">Goal</div><div class="detail num" id="goalSub"></div></div>
     </div>
+    <div class="cell"><div class="seg" data-group="focus">
+      <button class="chip" data-v="face">Face</button><button class="chip" data-v="strike">Strike</button><button class="chip" data-v="path">Path</button><button class="chip" data-v="all">All</button>
+    </div></div>
+  </div></div>
+  <div class="section charts">
+    <div class="group"><div class="h">Strike map</div><svg id="faceMap" viewBox="0 0 160 112" role="img" aria-label="Impact locations on the clubface"></svg></div>
+    <div class="group"><div class="h">Dispersion</div><svg id="dispMap" viewBox="0 0 160 112" role="img" aria-label="Shot dispersion"></svg></div>
   </div>
-  <div class="charts">
-    <div class="card"><p class="label">Strike map</p><svg id="faceMap" viewBox="0 0 160 112" role="img" aria-label="Impact locations on the clubface"></svg></div>
-    <div class="card"><p class="label">Dispersion</p><svg id="dispMap" viewBox="0 0 160 112" role="img" aria-label="Shot dispersion"></svg></div>
-  </div>
-  <div class="card" style="margin-top:12px"><p class="label">Shots</p><div id="list"><div class="meta">None yet.</div></div></div>
+  <div class="section"><div class="header">Shots</div><div class="group" id="list"><div class="empty">None yet.</div></div></div>
 </section>
 
 <!-- SUMMARY -->
 <section id="summary" hidden>
-  <div class="card"><p class="label" id="sumWhen"></p>
+  <div class="sub" id="sumWhen"></div>
+  <div class="section" style="margin-top:12px"><div class="group">
     <div class="stat3">
-      <div class="tile"><div class="k">Shots</div><div class="v" id="sShots"></div></div>
-      <div class="tile"><div class="k">Face ≤2°</div><div class="v" id="sFace"></div></div>
-      <div class="tile"><div class="k">Centred</div><div class="v" id="sCentre"></div></div>
+      <div class="tile"><div class="k">Shots</div><div class="v rounded num" id="sShots"></div></div>
+      <div class="tile"><div class="k">Face ≤ 2°</div><div class="v rounded num" id="sFace"></div></div>
+      <div class="tile"><div class="k">Centred</div><div class="v rounded num" id="sCentre"></div></div>
     </div>
-    <div class="cue" id="sTake" style="font-size:16px"></div>
-  </div>
-  <div class="card"><p class="label">By club</p><div id="sTable"></div></div>
-  <button class="big-btn" id="copy">Copy summary for Claude</button>
-  <button class="ghost" id="again">New session</button>
+    <div class="cue" id="sTake"></div>
+  </div></div>
+  <div class="section"><div class="header">By club</div><div class="group" id="sTable"></div></div>
+  <button class="filled" id="copy">Copy Summary for Claude</button>
+  <button class="tinted" id="again">New Session</button>
 </section>
 
 <nav class="dock" id="dock" hidden>
-  <button id="bPause" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg><span>Pause</span></button>
-  <button id="bRepeat"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4"/></svg>Repeat</button>
-  <button id="bMute" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg><span>Mute</span></button>
-  <button id="bEnd" class="end"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>End</button>
+  <button id="bPause" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg><span>Pause</span></button>
+  <button id="bRepeat"><svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/></svg>Repeat</button>
+  <button id="bMute" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6.5 9H4v6h2.5L11 19z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10"/></svg><span>Mute</span></button>
+  <button id="bEnd" class="end"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor"/></svg>End</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -217,7 +249,7 @@ const seen = new Set(); let shots = [];
 const keepAwake = async () => { try { wake = await navigator.wakeLock?.request('screen'); } catch {} };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && timer && !paused) { keepAwake(); tick(); } });
 function setPill(state, text) { $('pill').className = 'pill ' + state; $('pillText').textContent = text; }
-const show = id => ['setup', 'live', 'summary'].forEach(s => $(s).hidden = s !== id);
+const show = id => { ['setup', 'live', 'summary'].forEach(s => $(s).hidden = s !== id); $('navTitle').textContent = { setup: 'Coach', live: 'Session', summary: 'Summary' }[id]; scrollTo(0, 0); };
 
 // Accept a bare token or the whole link (…#t=<token>) pasted into the box.
 const parseToken = v => (v.match(/#t=([\w.-]+)/) || [])[1] || v.trim();
@@ -230,7 +262,7 @@ $('start').onclick = async () => {
   if (daysLeft(token) <= 0) { showToken(); return toast('Sign-in needed'); }
   say('Coach ready. Focus: ' + { face: 'face control', strike: 'strike location', path: 'swing path', all: 'everything' }[prefs.focus] + '.', { remember: false });
   keepAwake(); startedAt = new Date(); shots = []; seen.clear(); first = true; paused = false;
-  $('list').innerHTML = '<div class="meta">None yet.</div>'; renderGoal(); drawCharts();
+  $('list').innerHTML = '<div class="empty">None yet.</div>'; renderGoal(); drawCharts();
   show('live'); $('dock').hidden = false; setPill('live', 'Live');
   await tick(); timer = setInterval(() => !paused && tick(), 5000);
   clock = setInterval(updateMeta, 1000);
@@ -314,7 +346,7 @@ const GOALS = {
 function renderGoal() {
   const g = GOALS[prefs.focus], hits = shots.filter(s => g.test(adviseShot(s), s)).length, pct = shots.length ? Math.round(100 * hits / shots.length) : 0;
   $('goalLabel').textContent = g.label; $('goalNum').textContent = shots.length ? pct + '%' : '–';
-  $('goalBar').style.width = pct + '%';
+  $('goalBar').setAttribute('stroke-dashoffset', String(226.2 * (1 - pct / 100)));
   const last10 = shots.slice(-10), l10 = last10.filter(s => g.test(adviseShot(s), s)).length;
   $('goalSub').textContent = shots.length ? `${hits} of ${shots.length} shots · last 10: ${l10}/${last10.length}` + (g.base ? ` · your baseline ${g.base}%` : '') : (g.base ? `Your baseline: ${g.base}%` : '');
 }
